@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffinity - Smart Traffic Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background particles */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(66, 165, 245, 0.6);
+            border-radius: 50%;
+            animation: float 8s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Animated title */
+        .title {
+            font-family: 'Orbitron', monospace;
+            font-size: 4rem;
+            font-weight: 900;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #42a5f5, #7e57c2, #42a5f5);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(66, 165, 245, 0.5);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        /* Glassmorphism card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            animation: cardFloat 6s ease-in-out infinite;
+        }
+
+        @keyframes cardFloat {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-label {
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #42a5f5;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 20px rgba(66, 165, 245, 0.3);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, rgba(66, 165, 245, 0.8), rgba(126, 87, 194, 0.8));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(66, 165, 245, 0.4);
+            background: linear-gradient(135deg, rgba(66, 165, 245, 1), rgba(126, 87, 194, 1));
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .glass-card {
+                padding: 2rem;
+                margin: 1rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Loading animation for buttons */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation" id="backgroundAnimation"></div>
+    
+    <div class="container">
+        <h1 class="title">TRAFFINITY</h1>
+        <p class="subtitle">Smart Traffic Intelligence at Your Fingertips</p>
+        
+        <div class="glass-card">
+            <form id="routeForm">
+                <div class="input-group">
+                    <label for="origin" class="input-label">Starting Destination</label>
+                    <input 
+                        type="text" 
+                        id="origin" 
+                        class="input-field" 
+                        placeholder="Enter your starting location"
+                        required
+                    >
+                </div>
+                
+                <div class="input-group">
+                    <label for="destination" class="input-label">Ending Destination</label>
+                    <input 
+                        type="text" 
+                        id="destination" 
+                        class="input-field" 
+                        placeholder="Enter your destination"
+                        required
+                    >
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="action-button" id="trafficPrediction">
+                        Traffic Prediction
+                    </button>
+                    <button type="button" class="action-button" id="routeMonitoring">
+                        Route Monitoring
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Create floating particles
+        function createParticles() {
+            const animation = document.getElementById('backgroundAnimation');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                animation.appendChild(particle);
+            }
+        }
+
+        // Handle button clicks
+        function setupButtonHandlers() {
+            const trafficBtn = document.getElementById('trafficPrediction');
+            const monitoringBtn = document.getElementById('routeMonitoring');
+            const originInput = document.getElementById('origin');
+            const destinationInput = document.getElementById('destination');
+
+            function validateInputs() {
+                const origin = originInput.value.trim();
+                const destination = destinationInput.value.trim();
+                
+                if (!origin || !destination) {
+                    alert('Please enter both starting and ending destinations');
+                    return false;
+                }
+                return true;
+            }
+
+            function navigateToPage(page) {
+                if (!validateInputs()) return;
+                
+                const origin = originInput.value.trim();
+                const destination = destinationInput.value.trim();
+                
+                // Store data in sessionStorage for the target page
+                sessionStorage.setItem('origin', origin);
+                sessionStorage.setItem('destination', destination);
+                
+                // Navigate to the specific page
+                if (page === 'prediction') {
+                    window.location.href = '/prediction';
+                } else if (page === 'monitoring') {
+                    window.location.href = '/monitoring';
+                }
+            }
+
+            trafficBtn.addEventListener('click', function() {
+                this.classList.add('loading');
+                setTimeout(() => {
+                    navigateToPage('prediction');
+                }, 500);
+            });
+
+            monitoringBtn.addEventListener('click', function() {
+                this.classList.add('loading');
+                setTimeout(() => {
+                    navigateToPage('monitoring');
+                }, 500);
+            });
+        }
+
+        // Input field animations
+        function setupInputAnimations() {
+            const inputs = document.querySelectorAll('.input-field');
+            
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.style.transform = 'scale(1.02)';
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            setupButtonHandlers();
+            setupInputAnimations();
+        });
+    </script>
+</body>
+</html>

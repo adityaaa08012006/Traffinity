@@ -443,8 +443,23 @@ def monitor_route_conditions(origin_lat, origin_lon, dest_lat, dest_lon, session
     monitor_thread.start()
 
 @app.route('/')
-def home():
-    """Serve the main HTML page"""
+def main():
+    """Serve the main homepage"""
+    return render_template('main.html')
+
+@app.route('/prediction')
+def prediction():
+    """Serve the traffic prediction page"""
+    return render_template('prediction.html')
+
+@app.route('/monitoring')
+def monitoring():
+    """Serve the route monitoring page"""
+    return render_template('monitoring.html')
+
+@app.route('/dashboard')
+def dashboard():
+    """Serve the dashboard page (legacy route for compatibility)"""
     return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])

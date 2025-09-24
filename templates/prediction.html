@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Prediction - Traffinity</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .back-btn {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-50%) translateX(-2px);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .route-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .route-info h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .route-display {
+            font-size: 1.1em;
+            color: #555;
+        }
+        
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-bottom: 30px;
+        }
+        
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .result-card {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .result-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+        
+        .weather-card {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+        }
+        
+        .route-grid {
+            display: grid;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .route-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .route-item.best {
+            border-left-color: #00b894;
+            background: #e6fffa;
+        }
+        
+        .predictions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .prediction-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #ff7675;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #00b894;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-btn">← Back to Home</a>
+            <h1>🔮 Traffic Prediction</h1>
+            <p>Analyze traffic conditions with weather impact & route optimization</p>
+        </div>
+        
+        <div class="content">
+            <div class="route-info">
+                <h3>📍 Your Route</h3>
+                <div class="route-display" id="routeDisplay">
+                    Loading route information...
+                </div>
+            </div>
+            
+            <button class="analyze-btn" onclick="predictTraffic()" id="analyzeBtn">
+                🚀 Analyze Traffic & Routes
+            </button>
+            
+            <div id="results" class="results"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Load route information from sessionStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            const origin = sessionStorage.getItem('origin');
+            const destination = sessionStorage.getItem('destination');
+            
+            if (origin && destination) {
+                document.getElementById('routeDisplay').innerHTML = `
+                    <strong>From:</strong> ${origin}<br>
+                    <strong>To:</strong> ${destination}
+                `;
+            } else {
+                document.getElementById('routeDisplay').innerHTML = `
+                    <span style="color: #e74c3c;">No route information found. Please return to home and enter your locations.</span>
+                `;
+                document.getElementById('analyzeBtn').disabled = true;
+                document.getElementById('analyzeBtn').style.opacity = '0.5';
+            }
+        });
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="result-card weather-card">
+                    <h3>🌤️ Weather Impact Analysis</h3>
+                    <p><strong>Current Conditions:</strong> ${data.weather_impact.conditions}</p>
+                    <p><strong>Temperature:</strong> ${data.weather_impact.temperature}</p>
+                    <p><strong>Traffic Impact:</strong> ${data.weather_impact.impact}</p>
+                    <p><strong>Wind Speed:</strong> ${data.weather_impact.wind_speed}</p>
+                    <p><strong>Visibility:</strong> ${data.weather_impact.visibility}</p>
+                    ${data.weather_impact.factors.length > 0 ? `<p><strong>Impact Factors:</strong> ${data.weather_impact.factors.join(', ')}</p>` : ''}
+                </div>
+                
+                <div class="result-card">
+                    <h3>🗺️ Route Options (Weather-Adjusted)</h3>
+                    <div class="route-grid">
+            `;
+            
+            data.route_options.forEach((route, index) => {
+                const isBest = index === 0;
+                html += `
+                    <div class="route-item ${isBest ? 'best' : ''}">
+                        <strong>${route.name}</strong> ${isBest ? '⭐ Recommended' : ''}<br>
+                        Duration: ${route.weather_adjusted_duration.toFixed(1)} min (${route.duration.toFixed(1)} min without weather)<br>
+                        Distance: ${route.distance.toFixed(1)} km<br>
+                        Traffic Delay: ${route.traffic_delay.toFixed(1)} min
+                        ${route.fuel_consumption ? `<br>Fuel: ${route.fuel_consumption.toFixed(2)}L` : ''}
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>⏰ Time-based Predictions</h3>
+                    <div class="predictions-grid">
+            `;
+            
+            data.predictions.forEach(pred => {
+                html += `
+                    <div class="prediction-item">
+                        <strong>${pred.time}</strong><br>
+                        Duration: ${pred.duration} min<br>
+                        Weather-adjusted: ${pred.weather_adjusted_duration} min<br>
+                        Distance: ${pred.distance} km
+                    </div>
+                `;
+            });
+            
+            if (data.best_time) {
+                html += `
+                    </div>
+                    <div style="margin-top: 20px; padding: 15px; background: #e6fffa; border-radius: 8px;">
+                        <strong>🎯 Best Departure Time:</strong> ${data.best_time.time} at ${data.best_time.departure_time}<br>
+                        <strong>Duration:</strong> ${data.best_time.weather_adjusted_duration} minutes (weather-adjusted)
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>🚨 Traffic Incidents</h3>
+                    <p>Total Incidents: ${data.incidents.total}</p>
+                    <p>Road Closures: ${data.incidents.closures}</p>
+                    <p>Roadworks: ${data.incidents.roadworks}</p>
+                </div>
+            `;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        async function predictTraffic() {
+            const origin = sessionStorage.getItem('origin');
+            const destination = sessionStorage.getItem('destination');
+            const resultsDiv = document.getElementById('results');
+            
+            if (!origin || !destination) {
+                resultsDiv.innerHTML = '<div class="error">❌ No route information found. Please return to home and enter your locations.</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="loading">🔄 Analyzing traffic conditions, weather impact, and finding optimal routes...</div>';
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        origin: origin,
+                        destination: destination
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultsDiv.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                    return;
+                }
+                
+                displayResults(data);
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                console.error('Error in predictTraffic:', error);
+            }
+        }
+    </script>
+</body>
+</html>
