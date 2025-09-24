@@ -12,27 +12,62 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(120, 119, 198, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
             overflow: hidden;
+            position: relative;
+            z-index: 2;
+            animation: containerFloat 6s ease-in-out infinite;
+        }
+        
+        @keyframes containerFloat {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
         }
         
         .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, rgba(30, 60, 114, 0.8) 0%, rgba(42, 82, 152, 0.8) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             color: white;
             padding: 30px;
             text-align: center;
             position: relative;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .back-btn {
@@ -73,21 +108,31 @@
         }
         
         .route-info {
-            background: #f8f9fa;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 15px;
             margin-bottom: 25px;
-            border-left: 4px solid #667eea;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #42a5f5;
+            transition: all 0.3s ease;
+        }
+        
+        .route-info:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
         }
         
         .route-info h3 {
-            color: #333;
+            color: #ffffff;
             margin-bottom: 10px;
+            font-weight: 600;
         }
         
         .route-display {
             font-size: 1.1em;
-            color: #555;
+            color: rgba(255, 255, 255, 0.8);
         }
         
         .analyze-btn {
@@ -112,24 +157,100 @@
         }
         
         .result-card {
-            background: white;
-            border: 1px solid #e1e5e9;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            animation: cardSlideIn 0.6s ease-out;
+        }
+        
+        .result-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes cardSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .result-card h3 {
-            color: #333;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f1f3f4;
+            color: #ffffff;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+            font-size: 1.3em;
         }
         
         .weather-card {
-            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            background: linear-gradient(135deg, rgba(116, 185, 255, 0.3) 0%, rgba(9, 132, 227, 0.3) 100%);
+            border: 1px solid rgba(116, 185, 255, 0.3);
             color: white;
+        }
+        
+        .traffic-status-card {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 152, 0, 0.2) 100%);
+            border: 2px solid rgba(255, 193, 7, 0.4);
+            color: white;
+            text-align: center;
+        }
+        
+        .traffic-status-display {
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1.4em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            animation: pulseGlow 2s ease-in-out infinite alternate;
+        }
+        
+        .traffic-status-display.low {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border: 2px solid #16a34a;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+        }
+        
+        .traffic-status-display.medium {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border: 2px solid #d97706;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        }
+        
+        .traffic-status-display.high {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: 2px solid #b91c1c;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+        
+        .traffic-status-text {
+            display: block;
+            font-size: 1.2em;
+        }
+        
+        .traffic-status-description {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        @keyframes pulseGlow {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.02); }
         }
         
         .route-grid {
@@ -200,6 +321,282 @@
             border-radius: 8px;
             margin: 10px 0;
         }
+        
+        /* Horizontal Bar Chart Styles */
+        .route-chart {
+            margin-top: 20px;
+        }
+        
+        .route-bar-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            padding-top: 20px; /* Extra padding for badge */
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .route-bar-container:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(66, 165, 245, 0.3);
+            cursor: pointer;
+        }
+        
+        .map-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #42a5f5, #1976d2);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .map-link:hover {
+            background: linear-gradient(135deg, #1976d2, #0d47a1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(66, 165, 245, 0.4);
+        }
+        
+        .route-bar-container.fastest {
+            border: 2px solid #00d4aa;
+            background: rgba(0, 212, 170, 0.1);
+            box-shadow: 0 0 20px rgba(0, 212, 170, 0.3);
+            padding-top: 35px; /* More padding for fastest route with badge */
+        }
+        
+        .route-bar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .route-name {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+        
+        .route-time {
+            font-weight: 700;
+            color: #42a5f5;
+            font-size: 1.2em;
+        }
+        
+        .route-bar-container.fastest .route-time {
+            color: #00d4aa;
+        }
+        
+        .route-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        .route-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #42a5f5 0%, #7e57c2 100%);
+            border-radius: 6px;
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .route-bar-container.fastest .route-bar-fill {
+            background: linear-gradient(90deg, #00d4aa 0%, #00b894 100%);
+            box-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+        }
+        
+        .route-bar-fill::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        .route-details {
+            display: flex;
+            justify-content: space-between;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9em;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .traffic-delay {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            animation: delayPulse 3s infinite;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .traffic-delay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: delayShimmer 2s infinite;
+        }
+        
+        .traffic-delay.low {
+            background: linear-gradient(135deg, #00d4aa, #00b894);
+            box-shadow: 0 4px 15px rgba(0, 212, 170, 0.4);
+        }
+        
+        .traffic-delay.medium {
+            background: linear-gradient(135deg, #ffa726, #ff9800);
+            box-shadow: 0 4px 15px rgba(255, 167, 38, 0.4);
+        }
+        
+        .traffic-delay.high {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        @keyframes delayPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
+        }
+        
+        @keyframes delayShimmer {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        .fastest-badge {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #00d4aa, #00b894);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            animation: pulse 2s infinite;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0, 212, 170, 0.3);
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+        
+        /* Time-based predictions grid */
+        .predictions-chart {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .prediction-bar-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .prediction-bar-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .prediction-time {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        
+        .prediction-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .prediction-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffeaa7 0%, #fdcb6e 100%);
+            border-radius: 4px;
+            transition: width 1.2s ease-out;
+        }
+        
+        .prediction-details {
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .prediction-eta {
+            color: #00d4aa;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -227,29 +624,115 @@
     </div>
     
     <script>
-        // Load route information from sessionStorage
+        // Load route information and auto-start prediction
         document.addEventListener('DOMContentLoaded', function() {
             const origin = sessionStorage.getItem('origin');
             const destination = sessionStorage.getItem('destination');
             
             if (origin && destination) {
-                document.getElementById('routeDisplay').innerHTML = `
-                    <strong>From:</strong> ${origin}<br>
-                    <strong>To:</strong> ${destination}
-                `;
+                let routeDisplayHTML = `<strong>From:</strong> ${origin}<br><strong>To:</strong> ${destination}`;
+                
+                // Update route display
+                document.getElementById('routeDisplay').innerHTML = routeDisplayHTML;
+                
+                console.log('📍 Loaded route information:', origin, '->', destination);
+                
+                // Automatically start traffic prediction
+                predictTraffic();
             } else {
                 document.getElementById('routeDisplay').innerHTML = `
                     <span style="color: #e74c3c;">No route information found. Please return to home and enter your locations.</span>
                 `;
                 document.getElementById('analyzeBtn').disabled = true;
                 document.getElementById('analyzeBtn').style.opacity = '0.5';
+                
+                console.log('No stored locations found');
+                document.getElementById('results').innerHTML = `
+                    <div class="result-card" style="text-align: center; padding: 40px;">
+                        <h3 style="color: #42a5f5;">👋 Welcome to Traffic Prediction</h3>
+                        <p style="color: rgba(255, 255, 255, 0.8);">Enter your origin and destination above, then click "Analyze Traffic" to get started!</p>
+                    </div>
+                `;
             }
         });
         
+        function formatDuration(durationMinutes) {
+            const totalSeconds = Math.round(durationMinutes * 60);
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            
+            // If duration is 60 minutes or more, show hours and minutes
+            if (totalMinutes >= 60) {
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                if (minutes === 0) {
+                    return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+                } else {
+                    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+                }
+            } else {
+                // Less than an hour, show minutes and seconds
+                return `${totalMinutes}m ${seconds}s`;
+            }
+        }
+
+        function calculateETA(departureTime, durationMinutes) {
+            // Parse the departure time (format: "HH:MM" or time label)
+            let departureDate = new Date();
+            
+            if (departureTime.includes(':')) {
+                const [hours, minutes] = departureTime.split(':').map(Number);
+                departureDate.setHours(hours, minutes, 0, 0);
+            } else {
+                // Handle "Now", "30 minutes from now", etc.
+                const now = new Date();
+                if (departureTime.toLowerCase().includes('now') && !departureTime.includes('minutes')) {
+                    departureDate = now;
+                } else {
+                    const minutesMatch = departureTime.match(/(\d+)\s*minutes?\s*from\s*now/i);
+                    if (minutesMatch) {
+                        const minutesToAdd = parseInt(minutesMatch[1]);
+                        departureDate = new Date(now.getTime() + minutesToAdd * 60000);
+                    }
+                }
+            }
+            
+            // Add duration to departure time
+            const eta = new Date(departureDate.getTime() + durationMinutes * 60000);
+            
+            return eta.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+        }
+
         function displayResults(data) {
+            // Store data globally for map access
+            window.currentRouteData = data;
+            
             const resultsDiv = document.getElementById('results');
             
+            // Find the maximum duration for chart scaling
+            const maxDuration = Math.max(...data.route_options.map(route => route.weather_adjusted_duration));
+            
+            // Get traffic status styling
+            const getTrafficStatusClass = (status) => {
+                if (status && status.includes('🔴')) return 'high';
+                if (status && status.includes('🟡')) return 'medium';
+                if (status && status.includes('🟢')) return 'low';
+                return 'medium'; // default
+            };
+            
             let html = `
+                <div class="result-card traffic-status-card">
+                    <h3>🚦 Current Traffic Status</h3>
+                    <div class="traffic-status-display ${getTrafficStatusClass(data.traffic_status)}">
+                        <span class="traffic-status-text">${data.traffic_status || 'Traffic information unavailable'}</span>
+                    </div>
+                    <p class="traffic-status-description">Live traffic conditions analysis for your route planning</p>
+                </div>
+                
                 <div class="result-card weather-card">
                     <h3>🌤️ Weather Impact Analysis</h3>
                     <p><strong>Current Conditions:</strong> ${data.weather_impact.conditions}</p>
@@ -262,18 +745,33 @@
                 
                 <div class="result-card">
                     <h3>🗺️ Route Options (Weather-Adjusted)</h3>
-                    <div class="route-grid">
+                    <div class="route-chart">
             `;
             
             data.route_options.forEach((route, index) => {
                 const isBest = index === 0;
+                const barWidth = (route.weather_adjusted_duration / maxDuration) * 100;
+                const formattedDuration = formatDuration(route.weather_adjusted_duration);
+                const formattedDelay = formatDuration(route.traffic_delay);
+                
                 html += `
-                    <div class="route-item ${isBest ? 'best' : ''}">
-                        <strong>${route.name}</strong> ${isBest ? '⭐ Recommended' : ''}<br>
-                        Duration: ${route.weather_adjusted_duration.toFixed(1)} min (${route.duration.toFixed(1)} min without weather)<br>
-                        Distance: ${route.distance.toFixed(1)} km<br>
-                        Traffic Delay: ${route.traffic_delay.toFixed(1)} min
-                        ${route.fuel_consumption ? `<br>Fuel: ${route.fuel_consumption.toFixed(2)}L` : ''}
+                    <div class="route-bar-container ${isBest ? 'fastest' : ''}" onclick="openRouteMap('${route.route_id || `route_${index}`}')">
+                        ${isBest ? '<div class="fastest-badge">⚡ FASTEST</div>' : ''}
+                        <div class="route-bar-header">
+                            <span class="route-name">${route.name}</span>
+                            <span class="route-time">${formattedDuration}</span>
+                        </div>
+                        <div class="route-bar">
+                            <div class="route-bar-fill" style="width: ${barWidth}%"></div>
+                        </div>
+                        <div class="route-details">
+                            <span>Distance: ${route.distance.toFixed(1)} km</span>
+                            <span class="traffic-delay ${route.traffic_delay > 20 ? 'high' : route.traffic_delay > 10 ? 'medium' : 'low'}">⚠️ Traffic Delay: ${formattedDelay}</span>
+                            ${route.fuel_consumption ? `<span>Fuel: ${route.fuel_consumption.toFixed(2)}L</span>` : ''}
+                        </div>
+                        <button class="map-link" onclick="event.stopPropagation(); openRouteMap('${route.route_id || `route_${index}`}')">
+                            🗺️ View on Map
+                        </button>
                     </div>
                 `;
             });
@@ -283,40 +781,100 @@
                 </div>
                 
                 <div class="result-card">
-                    <h3>⏰ Time-based Predictions</h3>
-                    <div class="predictions-grid">
+                    <h3>⏰ Time-based Traffic Predictions</h3>
+                    <div class="predictions-chart">
             `;
             
+            // Find max duration for predictions scaling
+            const maxPredictionDuration = Math.max(...data.predictions.map(pred => parseFloat(pred.weather_adjusted_duration)));
+            
             data.predictions.forEach(pred => {
+                const barWidth = (parseFloat(pred.weather_adjusted_duration) / maxPredictionDuration) * 100;
+                
+                // Extract departure time from pred.time (format: "Now (HH:MM)" or "X minutes from now (HH:MM)")
+                const timeMatch = pred.time.match(/\((\d{2}:\d{2})\)/);
+                const departureTime = timeMatch ? timeMatch[1] : pred.time;
+                const eta = calculateETA(departureTime, parseFloat(pred.weather_adjusted_duration));
+                const formattedDuration = formatDuration(parseFloat(pred.weather_adjusted_duration));
+                
                 html += `
-                    <div class="prediction-item">
-                        <strong>${pred.time}</strong><br>
-                        Duration: ${pred.duration} min<br>
-                        Weather-adjusted: ${pred.weather_adjusted_duration} min<br>
-                        Distance: ${pred.distance} km
+                    <div class="prediction-bar-item">
+                        <div class="prediction-time">${pred.time}</div>
+                        <div class="prediction-bar">
+                            <div class="prediction-bar-fill" style="width: ${barWidth}%"></div>
+                        </div>
+                        <div class="prediction-details">
+                            <span>Duration: ${formattedDuration}</span>
+                            <span class="prediction-eta">🕐 ETA: ${eta}</span>
+                            <span>Distance: ${pred.distance} km</span>
+                            ${pred.delay ? `<span class="traffic-delay ${pred.delay > 20 ? 'high' : pred.delay > 10 ? 'medium' : 'low'}">⚠️ Delay: ${formatDuration(pred.delay)}</span>` : ''}
+                        </div>
                     </div>
                 `;
             });
             
             if (data.best_time) {
+                const bestTimeETA = calculateETA(data.best_time.departure_time, parseFloat(data.best_time.weather_adjusted_duration));
+                const bestTimeDuration = formatDuration(parseFloat(data.best_time.weather_adjusted_duration));
+                
                 html += `
                     </div>
-                    <div style="margin-top: 20px; padding: 15px; background: #e6fffa; border-radius: 8px;">
-                        <strong>🎯 Best Departure Time:</strong> ${data.best_time.time} at ${data.best_time.departure_time}<br>
-                        <strong>Duration:</strong> ${data.best_time.weather_adjusted_duration} minutes (weather-adjusted)
+                    <div style="margin-top: 20px; padding: 20px; background: rgba(0, 212, 170, 0.1); border: 2px solid rgba(0, 212, 170, 0.3); border-radius: 12px; backdrop-filter: blur(10px);">
+                        <strong style="color: #00d4aa;">🎯 Optimal Departure Time:</strong><br>
+                        <span style="color: #ffffff; font-size: 1.1em;">${data.best_time.time} at ${data.best_time.departure_time}</span><br>
+                        <span style="color: rgba(255, 255, 255, 0.8);">Duration: ${bestTimeDuration} (weather-adjusted)</span><br>
+                        <span style="color: #00d4aa; font-weight: 600; font-size: 1.1em;">🕐 Expected Arrival: ${bestTimeETA}</span>
                     </div>
                 </div>
                 
                 <div class="result-card">
                     <h3>🚨 Traffic Incidents</h3>
-                    <p>Total Incidents: ${data.incidents.total}</p>
-                    <p>Road Closures: ${data.incidents.closures}</p>
-                    <p>Roadworks: ${data.incidents.roadworks}</p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">
+                        <div style="text-align: center; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                            <div style="font-size: 2em; color: #ff6b6b;">${data.incidents.total}</div>
+                            <div style="color: rgba(255, 255, 255, 0.7);">Total Incidents</div>
+                        </div>
+                        <div style="text-align: center; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                            <div style="font-size: 2em; color: #ffa726;">${data.incidents.closures}</div>
+                            <div style="color: rgba(255, 255, 255, 0.7);">Road Closures</div>
+                        </div>
+                        <div style="text-align: center; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                            <div style="font-size: 2em; color: #42a5f5;">${data.incidents.roadworks}</div>
+                            <div style="color: rgba(255, 255, 255, 0.7);">Roadworks</div>
+                        </div>
+                    </div>
                 </div>
             `;
             }
             
             resultsDiv.innerHTML = html;
+            
+            // Trigger animations after a short delay
+            setTimeout(() => {
+                animateCharts();
+            }, 100);
+        }
+        
+        function animateCharts() {
+            // Animate route bars
+            const routeBars = document.querySelectorAll('.route-bar-fill');
+            routeBars.forEach((bar, index) => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, index * 200);
+            });
+            
+            // Animate prediction bars
+            const predictionBars = document.querySelectorAll('.prediction-bar-fill');
+            predictionBars.forEach((bar, index) => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, (index * 100) + 800); // Start after route bars
+            });
         }
         
         async function predictTraffic() {
@@ -332,15 +890,18 @@
             resultsDiv.innerHTML = '<div class="loading">🔄 Analyzing traffic conditions, weather impact, and finding optimal routes...</div>';
             
             try {
+                // Prepare request data
+                const requestData = {
+                    origin: origin,
+                    destination: destination
+                };
+                
                 const response = await fetch('/predict', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        origin: origin,
-                        destination: destination
-                    })
+                    body: JSON.stringify(requestData)
                 });
                 
                 const data = await response.json();
@@ -356,6 +917,37 @@
                 resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
                 console.error('Error in predictTraffic:', error);
             }
+        }
+
+
+        
+        // Store route data and open map view
+        function openRouteMap(routeId) {
+            console.log('Opening route map for:', routeId);
+            
+            // Store current route data in sessionStorage for map view
+            const currentData = window.currentRouteData;
+            console.log('Current route data:', currentData);
+            
+            if (currentData && currentData.route_options) {
+                sessionStorage.setItem('routeData', JSON.stringify(currentData.route_options));
+                console.log('Stored route data in sessionStorage');
+                
+                // Also store the specific route data for easier access
+                const routes = currentData.route_options;
+                const selectedRoute = routes.find(route => route.route_id === routeId);
+                if (selectedRoute) {
+                    sessionStorage.setItem('selectedRoute', JSON.stringify(selectedRoute));
+                    console.log('Stored selected route:', selectedRoute);
+                }
+            } else {
+                console.error('No route data available to store');
+                alert('No route data available. Please run a traffic prediction first.');
+                return;
+            }
+            
+            // Open map view in new tab/window
+            window.open(`/route_map/${routeId}`, '_blank');
         }
     </script>
 </body>

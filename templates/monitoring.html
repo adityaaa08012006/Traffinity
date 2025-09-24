@@ -448,16 +448,19 @@
             }
             
             try {
+                // Prepare request data
+                const requestData = {
+                    origin: origin,
+                    destination: destination,
+                    threshold: parseInt(threshold)
+                };
+
                 const response = await fetch('/start_monitoring', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        origin: origin,
-                        destination: destination,
-                        threshold: parseInt(threshold)
-                    })
+                    body: JSON.stringify(requestData)
                 });
                 
                 const data = await response.json();

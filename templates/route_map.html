@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Map - Traffinity</title>
+    
+    <!-- Leaflet Maps (More reliable than TomTom) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine for route display -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #2c3e50;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: #1a252f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .map-container {
+            height: calc(100vh - 80px);
+            width: 100%;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .route-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 350px;
+            z-index: 1000;
+        }
+
+        .route-info h3 {
+            color: #42a5f5;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .info-value {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .traffic-delay {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 700;
+        }
+
+        .traffic-delay.low {
+            background: linear-gradient(135deg, #00d4aa, #00b894);
+        }
+
+        .traffic-delay.medium {
+            background: linear-gradient(135deg, #ffa726, #ff9800);
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Fix for white text in Leaflet Routing Machine directions */
+        .leaflet-routing-container {
+            background: rgba(0, 0, 0, 0.9) !important;
+            backdrop-filter: blur(15px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+        }
+
+        .leaflet-routing-container h2,
+        .leaflet-routing-container h3 {
+            color: #42a5f5 !important;
+            font-size: 1.1em !important;
+            margin-bottom: 10px !important;
+        }
+
+        .leaflet-routing-alt {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 8px !important;
+            margin: 5px 0 !important;
+            padding: 10px !important;
+        }
+
+        .leaflet-routing-alt:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .leaflet-routing-alt-minimized {
+            color: #ffffff !important;
+        }
+
+        .leaflet-routing-geocoders {
+            background: rgba(0, 0, 0, 0.8) !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+        }
+
+        .leaflet-routing-geocoder {
+            color: #ffffff !important;
+        }
+
+        .leaflet-routing-geocoder input {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            color: #ffffff !important;
+            border-radius: 5px !important;
+            padding: 8px !important;
+        }
+
+        .leaflet-routing-geocoder input::placeholder {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+
+        /* Style the actual turn-by-turn directions */
+        .leaflet-routing-instructions-container {
+            background: rgba(0, 0, 0, 0.9) !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+            max-height: 300px !important;
+            overflow-y: auto !important;
+        }
+
+        .leaflet-routing-instruction {
+            color: #ffffff !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            padding: 8px 0 !important;
+        }
+
+        .leaflet-routing-instruction:last-child {
+            border-bottom: none !important;
+        }
+
+        .leaflet-routing-instruction-icon {
+            background: rgba(66, 165, 245, 0.2) !important;
+            border-radius: 3px !important;
+        }
+
+        .leaflet-routing-instruction-distance {
+            color: #42a5f5 !important;
+            font-weight: bold !important;
+        }
+
+        .leaflet-routing-instruction-text {
+            color: #ffffff !important;
+        }
+
+        /* Style the collapse/expand button */
+        .leaflet-routing-collapse-btn {
+            background: rgba(66, 165, 245, 0.8) !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 3px !important;
+            padding: 5px 10px !important;
+        }
+
+        .leaflet-routing-collapse-btn:hover {
+            background: rgba(66, 165, 245, 1) !important;
+        }
+
+        @media (max-width: 768px) {
+            .route-info {
+                position: static;
+                max-width: 100%;
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .map-container {
+                height: calc(60vh);
+            }
+
+            .leaflet-routing-container {
+                font-size: 14px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🗺️ Route Map View</h1>
+        <a href="/prediction" class="back-btn">← Back to Results</a>
+    </div>
+
+    <div class="map-container">
+        <div id="map"></div>
+        
+        <div class="route-info" id="routeInfo" style="display: none;">
+            <h3 id="routeName">Loading Route...</h3>
+            <div class="info-item">
+                <span class="info-label">Duration:</span>
+                <span class="info-value" id="routeDuration">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Distance:</span>
+                <span class="info-value" id="routeDistance">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Traffic Delay:</span>
+                <span class="info-value">
+                    <span class="traffic-delay" id="routeDelay">--</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Major Roads:</span>
+                <span class="info-value" id="majorRoads">--</span>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <h3>🔄 Loading Route Map...</h3>
+            <p>Fetching route geometry and traffic data</p>
+        </div>
+    </div>
+
+    <script>
+        console.log('🚀 Loading Leaflet Maps - More reliable than TomTom!');
+        
+        let map;
+        let routeData;
+        let routingControl;
+
+        // Initialize Leaflet map - but wait for actual coordinates to avoid NYC flash
+        function initMap() {
+            console.log('🗺️ Initializing Leaflet map - will load with actual locations');
+            
+            // Don't create map immediately - wait for route data first
+            loadRouteData();
+        }
+        
+        // Create map with correct center coordinates
+        async function createMapWithLocation(originCoords, destCoords) {
+            try {
+                console.log('🗺️ Creating map centered on route locations');
+                
+                // Calculate center point between origin and destination
+                const centerLat = (originCoords.lat + destCoords.lat) / 2;
+                const centerLon = (originCoords.lon + destCoords.lon) / 2;
+                
+                // Create map centered on the route
+                map = L.map('map').setView([centerLat, centerLon], 10);
+                
+                // Add OpenStreetMap tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 18,
+                }).addTo(map);
+                
+                console.log('✅ Leaflet map created at correct location');
+                
+                // Hide loading screen now that map is ready
+                document.getElementById('loading').style.display = 'none';
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error creating Leaflet map:', error);
+                document.getElementById('loading').innerHTML = `
+                    <h3>❌ Map Initialization Failed</h3>
+                    <p>Error: ${error.message}</p>
+                    <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+                `;
+                return false;
+            }
+        }
+
+        // Load route data from sessionStorage
+        function loadRouteData() {
+            const routeId = '{{ route_id }}';
+            console.log('🔍 Looking for route ID:', routeId);
+            
+            const storedRoutes = sessionStorage.getItem('routeData');
+            const selectedRoute = sessionStorage.getItem('selectedRoute');
+            const origin = sessionStorage.getItem('origin');
+            const destination = sessionStorage.getItem('destination');
+            
+            console.log('📊 Session storage data:', {
+                storedRoutes: storedRoutes ? 'Present' : 'Missing',
+                selectedRoute: selectedRoute ? 'Present' : 'Missing',
+                origin: origin,
+                destination: destination,
+                routeId: routeId
+            });
+            
+            // Try the selected route first (this should work for clicked routes)
+            if (selectedRoute) {
+                try {
+                    routeData = JSON.parse(selectedRoute);
+                    console.log('✅ Found selected route:', routeData);
+                    console.log('🛣️ Route details:', {
+                        name: routeData.name,
+                        distance: routeData.distance,
+                        duration: routeData.duration,
+                        traffic_delay: routeData.traffic_delay
+                    });
+                    displayRoute();
+                    return;
+                } catch (e) {
+                    console.error('❌ Error parsing selected route:', e);
+                }
+            }
+            
+            // Fallback to searching through all routes by ID
+            if (storedRoutes) {
+                try {
+                    const routes = JSON.parse(storedRoutes);
+                    console.log('🔍 Searching through available routes:', routes.map(r => r.route_id || 'No ID'));
+                    routeData = routes.find(route => route.route_id === routeId);
+                    
+                    if (routeData) {
+                        console.log('✅ Found route by ID:', routeData);
+                        displayRoute();
+                        return;
+                    } else {
+                        console.error('❌ Route not found:', routeId);
+                    }
+                } catch (error) {
+                    console.error('❌ Error parsing stored routes:', error);
+                }
+            }
+            
+            // Last resort - show basic route if we have origin/destination
+            console.log('⚠️ Falling back to basic route calculation');
+            document.getElementById('loading').style.display = 'none';
+            showBasicMapMessage(`Specific route "${routeId}" not found. Showing basic route calculation.`);
+            displayRoute();
+        }
+        
+        // Show basic map with message
+        function showBasicMapMessage(message) {
+            const routeInfoElement = document.getElementById('routeInfo');
+            if (routeInfoElement) {
+                routeInfoElement.style.display = 'block';
+                routeInfoElement.innerHTML = `
+                    <h3>🗺️ Map View</h3>
+                    <p>${message}</p>
+                    <p>The map is still functional for general navigation.</p>
+                    <button onclick="window.close()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Close Window</button>
+                `;
+            }
+        }
+
+        // Display route on map using Leaflet
+        function displayRoute() {
+            const origin = sessionStorage.getItem('origin');
+            const destination = sessionStorage.getItem('destination');
+
+            console.log('displayRoute called with:', { origin, destination });
+
+            if (!origin || !destination) {
+                console.error('Missing origin or destination:', { origin, destination });
+                showBasicMapMessage(`Missing location data. Origin: ${origin || 'Not found'}, Destination: ${destination || 'Not found'}`);
+                return;
+            }
+
+            console.log('🚀 Creating route from', origin, 'to', destination);
+            createRoute(origin, destination);
+        }
+
+        // Create route using Leaflet Routing Machine with different options per route type
+        async function createRoute(origin, destination) {
+            try {
+                console.log('🗺️ Creating route with Leaflet Routing Machine');
+                console.log('📋 Route data:', routeData);
+                
+                // Geocode locations using backend API
+                const originCoords = await geocodeLocation(origin);
+                const destCoords = await geocodeLocation(destination);
+                
+                if (!originCoords || !destCoords) {
+                    throw new Error('Could not find locations');
+                }
+                
+                console.log('📍 Origin:', originCoords, 'Destination:', destCoords);
+                
+                // Create map with correct center if not already created
+                if (!map) {
+                    const mapCreated = await createMapWithLocation(originCoords, destCoords);
+                    if (!mapCreated) {
+                        return;
+                    }
+                }
+                
+                // Remove existing route if any
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                }
+                
+                // Determine routing options based on route type
+                let routingOptions = {
+                    waypoints: [
+                        L.latLng(originCoords.lat, originCoords.lon),
+                        L.latLng(destCoords.lat, destCoords.lon)
+                    ],
+                    routeWhileDragging: false,
+                    showAlternatives: false,
+                    addWaypoints: false,
+                    createMarker: function(i, waypoint, n) {
+                        const isStart = i === 0;
+                        const marker = L.marker(waypoint.latLng, {
+                            icon: L.divIcon({
+                                className: 'custom-marker',
+                                html: `<div style="background: ${isStart ? '#22c55e' : '#ef4444'}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>`,
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 10]
+                            })
+                        });
+                        
+                        marker.bindPopup(isStart ? `🚗 Start: ${origin}` : `🎯 Destination: ${destination}`);
+                        return marker;
+                    }
+                };
+                
+                // Customize route appearance and behavior based on route type
+                if (routeData && routeData.name) {
+                    const routeName = routeData.name.toLowerCase();
+                    
+                    if (routeName.includes('fastest') || routeName.includes('quick')) {
+                        // Fastest route - blue line
+                        routingOptions.lineOptions = {
+                            styles: [{
+                                color: '#2563eb',
+                                weight: 7,
+                                opacity: 0.9
+                            }]
+                        };
+                        routingOptions.router = L.Routing.osrmv1({
+                            serviceUrl: 'https://router.project-osrm.org/route/v1',
+                            profile: 'driving'
+                        });
+                        console.log('🚀 Using fastest route configuration');
+                        
+                    } else if (routeName.includes('shortest') || routeName.includes('direct')) {
+                        // Shortest route - green line
+                        routingOptions.lineOptions = {
+                            styles: [{
+                                color: '#16a34a',
+                                weight: 6,
+                                opacity: 0.8
+                            }]
+                        };
+                        console.log('📏 Using shortest route configuration');
+                        
+                    } else if (routeName.includes('scenic') || routeName.includes('alternate')) {
+                        // Scenic/alternate route - purple line
+                        routingOptions.lineOptions = {
+                            styles: [{
+                                color: '#9333ea',
+                                weight: 6,
+                                opacity: 0.8
+                            }]
+                        };
+                        console.log('🌄 Using scenic route configuration');
+                        
+                    } else {
+                        // Default route - orange line
+                        routingOptions.lineOptions = {
+                            styles: [{
+                                color: '#ea580c',
+                                weight: 6,
+                                opacity: 0.8
+                            }]
+                        };
+                        console.log('🛣️ Using default route configuration');
+                    }
+                } else {
+                    // Fallback styling
+                    routingOptions.lineOptions = {
+                        styles: [{
+                            color: '#6b7280',
+                            weight: 5,
+                            opacity: 0.7
+                        }]
+                    };
+                }
+                
+                // Create route with custom options
+                routingControl = L.Routing.control(routingOptions).addTo(map);
+                
+                // Listen for route found
+                routingControl.on('routesfound', function(e) {
+                    console.log('✅ Route found successfully!');
+                    const route = e.routes[0];
+                    
+                    // Use stored route data if available, otherwise use calculated data
+                    const displayData = {
+                        name: routeData?.name || 'Selected Route',
+                        duration: routeData?.duration || (route.summary.totalTime / 60),
+                        distance: routeData?.distance || (route.summary.totalDistance / 1000),
+                        traffic_delay: routeData?.traffic_delay || 0
+                    };
+                    
+                    updateRouteInfo(displayData);
+                    
+                    console.log('📊 Route summary:', {
+                        name: displayData.name,
+                        distance: displayData.distance.toFixed(1) + ' km',
+                        duration: Math.round(displayData.duration) + ' minutes',
+                        traffic_delay: displayData.traffic_delay + ' min delay'
+                    });
+                });
+                
+                routingControl.on('routingerror', function(e) {
+                    console.error('❌ Routing error:', e);
+                    showBasicMapMessage('Could not calculate route. Showing locations only.');
+                });
+                
+            } catch (error) {
+                console.error('❌ Error creating route:', error);
+                showBasicMapMessage(`Error: ${error.message}`);
+            }
+        }
+
+        // Geocode location using backend API
+        async function geocodeLocation(location) {
+            try {
+                console.log('🔍 Geocoding location:', location);
+                
+                const response = await fetch('/geocode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ location: location })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Geocoding failed: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('📍 Geocoding result:', data);
+                
+                if (data && data.lat && data.lon) {
+                    return {
+                        lat: parseFloat(data.lat),
+                        lon: parseFloat(data.lon),
+                        address: data.address || location
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('❌ Geocoding error for', location, ':', error);
+                return null;
+            }
+        }
+
+        // This function is now handled by Leaflet Routing Machine automatically!
+
+        // Update route info panel
+        function updateRouteInfo(liveRouteData) {
+            const dataToUse = liveRouteData || routeData;
+            
+            if (dataToUse) {
+                document.getElementById('routeName').textContent = dataToUse.name || 'Route';
+                document.getElementById('routeDuration').textContent = formatDuration(dataToUse.duration);
+                document.getElementById('routeDistance').textContent = `${dataToUse.distance.toFixed(1)} km`;
+                
+                const delayElement = document.getElementById('routeDelay');
+                const delayClass = dataToUse.traffic_delay > 20 ? 'high' : dataToUse.traffic_delay > 10 ? 'medium' : 'low';
+                delayElement.className = `traffic-delay ${delayClass}`;
+                delayElement.textContent = formatDuration(dataToUse.traffic_delay);
+                
+                document.getElementById('majorRoads').textContent = dataToUse.major_roads && dataToUse.major_roads.length > 0 
+                    ? dataToUse.major_roads.join(', ') 
+                    : 'Route calculated by OpenStreetMap';
+                
+                document.getElementById('routeInfo').style.display = 'block';
+            }
+        }
+
+        // Format duration helper
+        function formatDuration(durationMinutes) {
+            const totalSeconds = Math.round(durationMinutes * 60);
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            
+            // If duration is 60 minutes or more, show hours and minutes
+            if (totalMinutes >= 60) {
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                if (minutes === 0) {
+                    return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+                } else {
+                    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+                }
+            } else {
+                // Less than an hour, show minutes and seconds
+                return `${totalMinutes}m ${seconds}s`;
+            }
+        }
+
+        // Add immediate console log to verify JavaScript is loading
+        console.log('🚀 route_map.html JavaScript loaded');
+        console.log('📦 TomTom SDK available:', typeof tt !== 'undefined' ? 'Yes' : 'No');
+        
+        // Fallback function to show error if nothing works
+        function showFallbackError(reason) {
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.innerHTML = `
+                    <h3>❌ Map Loading Failed</h3>
+                    <p><strong>Reason:</strong> ${reason}</p>
+                    <p>Possible solutions:</p>
+                    <ul style="text-align: left; margin: 10px 0;">
+                        <li>Check internet connection</li>
+                        <li>Refresh the page</li>
+                        <li>Try again in a few moments</li>
+                    </ul>
+                    <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+                `;
+            }
+        }
+        
+        // Initialize when page loads - Leaflet is much more reliable!
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔄 DOMContentLoaded event fired - initializing Leaflet map');
+            
+            // Check if Leaflet loaded (it's very reliable)
+            if (typeof L !== 'undefined') {
+                console.log('✅ Leaflet loaded successfully, initializing map');
+                initMap();
+            } else {
+                console.error('❌ Leaflet failed to load');
+                document.getElementById('loading').innerHTML = `
+                    <h3>❌ Map Library Failed to Load</h3>
+                    <p>Please check your internet connection and refresh the page.</p>
+                    <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

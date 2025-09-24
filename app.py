@@ -18,9 +18,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Store active monitoring sessions
 active_monitors = {}
 
-def pretty_print(title, data):
-    print(f"\n==== {title} ====")
-    print(json.dumps(data, indent=2))
+# Removed pretty_print function - was causing verbose output
 
 # Traffic Flow API - Current traffic conditions
 def get_current_traffic(lat, lon):
@@ -315,9 +313,9 @@ def get_multiple_routes(origin_lat, origin_lon, dest_lat, dest_lon, departure_mi
     departure_iso = departure_time.strftime("%Y-%m-%dT%H:%M:%S")
     
     route_types = {
-        "fastest": "Fastest Route",
-        "shortest": "Shortest Route", 
-        "eco": "Eco-Friendly Route"
+        "fastest": "Recommended Route",
+        "shortest": "Direct Route", 
+        "eco": "Fuel-Efficient Route"
     }
     
     routes = {}
@@ -342,13 +340,37 @@ def get_multiple_routes(origin_lat, origin_lon, dest_lat, dest_lon, departure_mi
                 route_data = []
                 for i, route in enumerate(data['routes']):
                     summary = route['summary']
+                    
+                    # Extract major roads/highways from route instructions
+                    major_roads = []
+                    if 'guidance' in route and 'instructions' in route['guidance']:
+                        for instruction in route['guidance']['instructions'][:5]:  # First 5 instructions
+                            road_numbers = instruction.get('roadNumbers', [])
+                            major_roads.extend(road_numbers)
+                    
+                    # Create a more descriptive route name
+                    route_description = route_name
+                    if major_roads:
+                        unique_roads = list(dict.fromkeys(major_roads))[:3]  # Remove duplicates, max 3
+                        road_text = ", ".join(unique_roads)
+                        if i == 0:
+                            route_description = f"{route_name} via {road_text}"
+                        else:
+                            route_description = f"Alternative via {road_text}"
+                    elif i > 0:
+                        route_description = f"Alternative Route {i+1}"
+                    
                     route_info = {
-                        "name": f"{route_name}" + (f" Alt {i+1}" if i > 0 else ""),
+                        "name": route_description,
                         "duration": summary.get('travelTimeInSeconds', 0) / 60,
                         "distance": summary.get('lengthInMeters', 0) / 1000,
                         "traffic_delay": summary.get('trafficDelayInSeconds', 0) / 60,
                         "fuel_consumption": summary.get('fuelConsumptionInLiters', 0),
-                        "departure_time": departure_time.strftime("%H:%M")
+                        "departure_time": departure_time.strftime("%H:%M"),
+                        "route_geometry": route.get('legs', [{}])[0].get('points', []) if route.get('legs') else [],
+                        "instructions": route.get('guidance', {}).get('instructions', [])[:10],  # First 10 turn-by-turn instructions
+                        "route_id": f"{route_type}_{i}",
+                        "major_roads": major_roads[:3]
                     }
                     route_data.append(route_info)
                 
@@ -357,6 +379,71 @@ def get_multiple_routes(origin_lat, origin_lon, dest_lat, dest_lon, departure_mi
             routes[route_type] = [{"error": str(e)}]
     
     return routes
+
+def deduplicate_routes(routes_data, similarity_threshold=0.05):
+    """Remove duplicate routes that are too similar in distance and duration"""
+    all_routes = []
+    
+    # Collect all routes from different types
+    for route_type, route_list in routes_data.items():
+        for route in route_list:
+            if 'error' not in route:
+                route['original_type'] = route_type
+                all_routes.append(route)
+    
+    # Remove duplicates based on distance and duration similarity
+    unique_routes = []
+    
+    for route in all_routes:
+        is_duplicate = False
+        
+        for existing_route in unique_routes:
+            # Calculate similarity based on distance and duration
+            distance_diff = abs(route['distance'] - existing_route['distance']) / max(route['distance'], existing_route['distance'], 0.1)
+            duration_diff = abs(route['duration'] - existing_route['duration']) / max(route['duration'], existing_route['duration'], 0.1)
+            
+            # If both distance and duration are very similar, it's a duplicate
+            if distance_diff <= similarity_threshold and duration_diff <= similarity_threshold:
+                is_duplicate = True
+                
+                # Keep the route with better characteristics (shorter duration or less traffic delay)
+                if route['duration'] < existing_route['duration'] or route['traffic_delay'] < existing_route['traffic_delay']:
+                    # Replace existing with this better route
+                    unique_routes.remove(existing_route)
+                    unique_routes.append(route)
+                break
+        
+        if not is_duplicate:
+            unique_routes.append(route)
+    
+    # If we have too few unique routes, relax the threshold slightly
+    if len(unique_routes) < 2 and len(all_routes) > 1 and similarity_threshold < 0.15:
+        return deduplicate_routes(routes_data, similarity_threshold * 1.5)
+    
+    # Ensure we always have at least one route
+    if len(unique_routes) == 0 and len(all_routes) > 0:
+        unique_routes = [all_routes[0]]  # Keep the first route as fallback
+    
+    # Reorganize back into route types structure and improve naming
+    deduplicated_routes = {}
+    route_names = ["Recommended Route", "Alternative Route", "Backup Route"]
+    
+    for i, route in enumerate(unique_routes):
+        route_type = route.pop('original_type')
+        
+        # Improve route naming for clarity
+        if len(unique_routes) == 1:
+            route['name'] = "Recommended Route"
+        elif i < len(route_names):
+            route['name'] = route_names[i]
+        else:
+            route['name'] = f"Route Option {i + 1}"
+        
+        if route_type not in deduplicated_routes:
+            deduplicated_routes[route_type] = []
+        deduplicated_routes[route_type].append(route)
+    
+    return deduplicated_routes
 
 def compare_route_options(routes_data, weather_impact):
     """Compare different route options considering weather impact"""
@@ -473,8 +560,11 @@ def predict_traffic_route():
         if not origin or not destination:
             return jsonify({"error": "Both origin and destination are required"}), 400
         
-        # First, geocode the locations to get coordinates
+        # Geocode locations using TomTom API
+        print(f"🔍 Geocoding origin: {origin}")
         origin_coords = geocode_location(origin)
+        
+        print(f"🔍 Geocoding destination: {destination}")
         dest_coords = geocode_location(destination)
         
         if not origin_coords or not dest_coords:
@@ -534,7 +624,20 @@ def get_traffic_analysis(origin_lat, origin_lon, dest_lat, dest_lon):
     
     # Get multiple route options
     multiple_routes = get_multiple_routes(origin_lat, origin_lon, dest_lat, dest_lon)
-    route_comparison = compare_route_options(multiple_routes, weather_impact)
+    
+    # Count original routes
+    original_count = sum(len(routes) for routes in multiple_routes.values() if isinstance(routes, list))
+    
+    # Remove duplicate routes that are too similar
+    unique_routes = deduplicate_routes(multiple_routes)
+    
+    # Count unique routes
+    unique_count = sum(len(routes) for routes in unique_routes.values() if isinstance(routes, list))
+    
+    if original_count > unique_count:
+        print(f"🔄 Route deduplication: {original_count} routes → {unique_count} unique routes")
+    
+    route_comparison = compare_route_options(unique_routes, weather_impact)
     
     # Traffic predictions for fastest route
     traffic_comparison = compare_traffic_times(origin_lat, origin_lon, dest_lat, dest_lon)
@@ -552,7 +655,8 @@ def get_traffic_analysis(origin_lat, origin_lon, dest_lat, dest_lon):
                 'time': f"{time_label} ({data['departure_time']})",
                 'duration': f"{data['duration']:.1f}",
                 'weather_adjusted_duration': f"{weather_adjusted:.1f}",
-                'distance': f"{data['distance']:.1f}"
+                'distance': f"{data['distance']:.1f}",
+                'traffic_delay': data.get('traffic_delay', 0)
             })
             
             if weather_adjusted < best_duration:
@@ -581,18 +685,8 @@ def get_traffic_analysis(origin_lat, origin_lon, dest_lat, dest_lon):
             "closures": incident_analysis["closures"],
             "roadworks": incident_analysis["roadworks"]
         }
-    print({
-        "traffic_status": traffic_status,
-        "weather_impact": weather_impact,
-        "best_time": best_time,
-        "predictions": predictions,
-        "route_options": route_comparison[:5],  # Top 5 routes
-        "incidents": incident_summary,
-        "route": {
-            "origin": f"{origin_lat:.4f}, {origin_lon:.4f}",
-            "destination": f"{dest_lat:.4f}, {dest_lon:.4f}"
-        }
-    })
+    # Log summary instead of full data to keep terminal clean
+    print(f"✅ Traffic prediction completed: {len(route_comparison)} routes found, {traffic_status}")
     return {
         "traffic_status": traffic_status,
         "weather_impact": weather_impact,
@@ -618,8 +712,11 @@ def start_route_monitoring():
         if not all([origin, destination]):
             return jsonify({"error": "Origin and destination are required"}), 400
         
-        # Geocode locations
+        # Geocode locations using TomTom API
+        print(f"🔍 Geocoding origin for monitoring: {origin}")
         origin_coords = geocode_location(origin)
+        
+        print(f"🔍 Geocoding destination for monitoring: {destination}")
         dest_coords = geocode_location(destination)
         
         if not origin_coords or not dest_coords:
@@ -685,7 +782,70 @@ def get_active_monitors():
     
     return jsonify({"active_monitors": monitors_info})
 
+@app.route('/route_map/<route_id>')
+def route_map(route_id):
+    """Serve the route map view for a specific route"""
+    return render_template('route_map.html', route_id=route_id)
+
+@app.route('/test_tomtom')
+def test_tomtom():
+    """Serve the TomTom API test page"""
+    return render_template('tomtom_test.html')
+
+@app.route('/test_tomtom_api')
+def test_tomtom_api():
+    """Test if TomTom API is accessible"""
+    try:
+        import requests
+        
+        # Test geocoding API
+        test_url = f"https://api.tomtom.com/search/2/geocode/test.json?key={API_KEY}&limit=1"
+        response = requests.get(test_url, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                'status': 'success',
+                'message': 'TomTom API is working',
+                'test_url': test_url,
+                'response_status': response.status_code,
+                'results_count': len(data.get('results', []))
+            }
+        else:
+            return {
+                'status': 'error',
+                'message': f'TomTom API returned status {response.status_code}',
+                'test_url': test_url,
+                'response_status': response.status_code
+            }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'Error connecting to TomTom API: {str(e)}',
+            'test_url': test_url if 'test_url' in locals() else 'N/A'
+        }
+
 # WebSocket event handlers
+@app.route('/geocode', methods=['POST'])
+def geocode_endpoint():
+    """Geocode a location using TomTom API"""
+    try:
+        data = request.get_json()
+        location = data.get('location', '').strip()
+        
+        if not location:
+            return jsonify({"error": "Location is required"}), 400
+        
+        coords = geocode_location(location)
+        
+        if not coords:
+            return jsonify({"error": "Could not find the specified location"}), 404
+        
+        return jsonify(coords)
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @socketio.on('connect')
 def handle_connect():
     print(f"Client connected")
@@ -720,5 +880,5 @@ if __name__ == "__main__":
         print("2. Sign up for a free account")
         print("3. Get your API key and replace 'YOUR_OPENWEATHER_API_KEY'")
     
-    # Run Flask app with SocketIO
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    # Run Flask app with SocketIO (debug=False for cleaner terminal output)
+    socketio.run(app, debug=False, host='0.0.0.0', port=5000)

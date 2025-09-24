@@ -22,7 +22,6 @@
             position: relative;
         }
 
-        /* Animated background particles */
         .background-animation {
             position: fixed;
             top: 0;
@@ -70,7 +69,6 @@
             padding: 20px;
         }
 
-        /* Animated title */
         .title {
             font-family: 'Orbitron', monospace;
             font-size: 4rem;
@@ -104,7 +102,6 @@
             font-weight: 300;
         }
 
-        /* Glassmorphism card */
         .glass-card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
@@ -129,6 +126,7 @@
 
         .input-group {
             margin-bottom: 1.5rem;
+            position: relative;
         }
 
         .input-label {
@@ -210,7 +208,6 @@
             transform: translateY(0);
         }
 
-        /* Responsive design */
         @media (max-width: 768px) {
             .title {
                 font-size: 2.5rem;
@@ -224,31 +221,6 @@
             .button-group {
                 flex-direction: column;
             }
-        }
-
-        /* Loading animation for buttons */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
-        .loading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid transparent;
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -268,6 +240,10 @@
                         id="origin" 
                         class="input-field" 
                         placeholder="Enter your starting location"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        autocorrect="off"
+                        spellcheck="false"
                         required
                     >
                 </div>
@@ -279,6 +255,10 @@
                         id="destination" 
                         class="input-field" 
                         placeholder="Enter your destination"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        autocorrect="off"
+                        spellcheck="false"
                         required
                     >
                 </div>
@@ -296,7 +276,6 @@
     </div>
 
     <script>
-        // Create floating particles
         function createParticles() {
             const animation = document.getElementById('backgroundAnimation');
             const particleCount = 50;
@@ -311,58 +290,35 @@
             }
         }
 
-        // Handle button clicks
         function setupButtonHandlers() {
             const trafficBtn = document.getElementById('trafficPrediction');
             const monitoringBtn = document.getElementById('routeMonitoring');
-            const originInput = document.getElementById('origin');
-            const destinationInput = document.getElementById('destination');
-
-            function validateInputs() {
-                const origin = originInput.value.trim();
-                const destination = destinationInput.value.trim();
-                
-                if (!origin || !destination) {
-                    alert('Please enter both starting and ending destinations');
-                    return false;
-                }
-                return true;
-            }
-
+            
             function navigateToPage(page) {
-                if (!validateInputs()) return;
-                
-                const origin = originInput.value.trim();
-                const destination = destinationInput.value.trim();
-                
-                // Store data in sessionStorage for the target page
+                const origin = document.getElementById('origin').value.trim();
+                const destination = document.getElementById('destination').value.trim();
+
+                if (!origin || !destination) {
+                    alert('Please enter both starting and ending destinations.');
+                    return;
+                }
+
+                sessionStorage.clear();
                 sessionStorage.setItem('origin', origin);
                 sessionStorage.setItem('destination', destination);
                 
-                // Navigate to the specific page
-                if (page === 'prediction') {
-                    window.location.href = '/prediction';
-                } else if (page === 'monitoring') {
-                    window.location.href = '/monitoring';
-                }
+                window.location.href = page;
             }
 
             trafficBtn.addEventListener('click', function() {
-                this.classList.add('loading');
-                setTimeout(() => {
-                    navigateToPage('prediction');
-                }, 500);
+                navigateToPage('prediction');
             });
 
             monitoringBtn.addEventListener('click', function() {
-                this.classList.add('loading');
-                setTimeout(() => {
-                    navigateToPage('monitoring');
-                }, 500);
+                navigateToPage('monitoring');
             });
         }
 
-        // Input field animations
         function setupInputAnimations() {
             const inputs = document.querySelectorAll('.input-field');
             
@@ -377,7 +333,6 @@
             });
         }
 
-        // Initialize everything when page loads
         document.addEventListener('DOMContentLoaded', function() {
             createParticles();
             setupButtonHandlers();
