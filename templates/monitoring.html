@@ -4,541 +4,840 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Route Monitoring - Traffinity</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link  rel="stylesheet">
     <style>
+        :root {
+            --charcoal-black: #1C1C1C;
+            --traffic-red: #D7263D;
+            --signal-yellow: #FFD23F;
+            --green-light: #21BF73;
+            --tech-gray: #E0E0E0;
+            --glass-bg: rgba(224, 224, 224, 0.05);
+            --glass-border: rgba(224, 224, 224, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: 'Inter', sans-serif;
+            background: var(--charcoal-black);
+            color: var(--tech-gray);
+            line-height: 1.6;
+            overflow-x: hidden;
         }
-        
-        .container {
-            max-width: 1000px;
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(28, 28, 28, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-container {
+            max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
         }
-        
-        .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .back-btn {
-            position: absolute;
-            left: 30px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--signal-yellow);
             text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
         }
-        
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-50%) translateX(-2px);
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
         }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-        
-        .content {
-            padding: 30px;
-        }
-        
-        .route-info {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .route-info h3 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .route-display {
-            font-size: 1.1em;
-            color: #555;
-        }
-        
-        .monitoring-section {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        input[type="number"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
+
+        .nav-links a {
+            color: var(--tech-gray);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            padding: 0.5rem 1rem;
             border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
         }
-        
-        input[type="number"]:focus {
+
+        .nav-links a:hover {
+            color: var(--signal-yellow);
+            background: var(--glass-bg);
+        }
+
+        .nav-auth {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-outline {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--signal-yellow);
+            background: transparent;
+            color: var(--signal-yellow);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-outline:hover {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 8rem 2rem 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .page-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--signal-yellow), var(--green-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .page-description {
+            font-size: 1.2rem;
+            color: var(--tech-gray);
+            opacity: 0.8;
+        }
+
+        /* Monitoring Cards */
+        .monitoring-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--tech-gray);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .monitoring-form {
+            display: grid;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--tech-gray);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-input {
+            padding: 1rem;
+            background: rgba(28, 28, 28, 0.8);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--tech-gray);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--signal-yellow);
+            box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.2);
         }
-        
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .form-input::placeholder {
+            color: rgba(224, 224, 224, 0.5);
+        }
+
+        .btn-primary {
+            padding: 1rem 2rem;
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--traffic-red);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(215, 38, 61, 0.3);
+        }
+
+        .btn-danger {
+            padding: 0.5rem 1rem;
+            background: var(--traffic-red);
             color: white;
             border: none;
-            padding: 15px 30px;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: transform 0.3s;
-            margin: 10px 5px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        
-        .btn:hover {
+
+        .btn-danger:hover {
+            background: #b71c1c;
+            transform: translateY(-1px);
+        }
+
+        /* Active Monitors */
+        .active-monitors {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .monitor-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .monitor-card:hover {
+            background: rgba(224, 224, 224, 0.08);
             transform: translateY(-2px);
         }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            color: #333;
-        }
-        
-        .monitoring-controls {
+
+        .monitor-header {
             display: flex;
-            gap: 10px;
-            margin-top: 15px;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
         }
-        
-        .monitoring-status {
-            background: #e6f3ff;
-            border: 1px solid #b3d9ff;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
+
+        .monitor-route {
+            flex: 1;
         }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .status-monitoring {
-            background-color: #00b894;
-            animation: pulse 2s infinite;
-        }
-        
-        .status-stopped {
-            background-color: #e17055;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        
-        /* Notification Styles */
-        .notification-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            max-width: 400px;
-        }
-        
-        .notification {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            border-left: 5px solid #667eea;
-            animation: slideIn 0.3s ease-out;
-            position: relative;
-            color: #333;
-        }
-        
-        .notification h4 {
-            color: #333;
-            margin-bottom: 10px;
+
+        .monitor-route h4 {
+            color: var(--signal-yellow);
             font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        
-        .notification p {
-            color: #555;
-            margin-bottom: 8px;
-            line-height: 1.4;
+
+        .route-details {
+            color: var(--tech-gray);
+            opacity: 0.8;
+            font-size: 0.9rem;
         }
-        
-        .notification.success {
-            border-left-color: #00b894;
-            background: #f0fff4;
+
+        .monitor-status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.5rem;
         }
-        
-        .notification.success h4 {
-            color: #00684a;
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        
-        .notification.warning {
-            border-left-color: #fdcb6e;
-            background: #fffbf0;
+
+        .status-badge.active {
+            background: var(--green-light);
+            color: var(--charcoal-black);
         }
-        
-        .notification.warning h4 {
-            color: #b8860b;
+
+        .status-badge.inactive {
+            background: var(--tech-gray);
+            color: var(--charcoal-black);
         }
-        
-        .notification.error {
-            border-left-color: #e17055;
-            background: #fff5f5;
+
+        /* Alerts Section */
+        .alerts-section {
+            margin-top: 2rem;
         }
-        
-        .notification.error h4 {
-            color: #c53030;
+
+        .alert {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-left: 4px solid var(--signal-yellow);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
         }
-        
-        .notification .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #666;
-            font-weight: bold;
+
+        .alert.success {
+            border-left-color: var(--green-light);
         }
-        
-        .notification .close-btn:hover {
-            color: #333;
+
+        .alert.warning {
+            border-left-color: var(--signal-yellow);
         }
-        
-        .notification .timestamp {
-            font-size: 12px;
-            color: #888;
-            margin-top: 8px;
-            font-style: italic;
+
+        .alert.error {
+            border-left-color: var(--traffic-red);
         }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
+
+        .alert-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--tech-gray);
+        }
+
+        .alert-message {
+            color: var(--tech-gray);
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .alert-time {
+            color: var(--tech-gray);
+            opacity: 0.6;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Loading states */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(224, 224, 224, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--signal-yellow);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--tech-gray);
+            opacity: 0.6;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
             }
-            to {
-                transform: translateX(0);
-                opacity: 1;
+
+            .page-title {
+                font-size: 2rem;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .monitor-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .monitor-status {
+                align-items: flex-start;
+            }
+
+            .main-content {
+                padding: 6rem 1rem 2rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Notification Container -->
-    <div class="notification-container" id="notificationContainer"></div>
-    
-    <div class="container">
-        <div class="header">
-            <a href="/" class="back-btn">← Back to Home</a>
-            <h1>📱 Route Monitoring</h1>
-            <p>Get real-time alerts when traffic conditions change on your route</p>
-        </div>
-        
-        <div class="content">
-            <div class="route-info">
-                <h3>📍 Your Route</h3>
-                <div class="route-display" id="routeDisplay">
-                    Loading route information...
-                </div>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/home" class="logo">
+                
+                Traffinity
+            </a>
+            <ul class="nav-links">
+                <li><a href="/home">Home</a></li>
+                <li><a href="/prediction">Predictions</a></li>
+                <li><a href="/monitoring">Monitoring</a></li>
+                <li><a href="/home#about">About</a></li>
+                <li><a href="/home#contact">Contact</a></li>
+            </ul>
+            <div class="nav-auth">
+                <a href="/auth" class="btn-outline">
+                    
+                    Account
+                </a>
             </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                
+                Route Monitoring
+            </h1>
+            <p class="page-description">
+                Set up real-time monitoring for your routes and receive instant alerts when traffic conditions change.
+            </p>
+        </div>
+
+        <!-- Start Monitoring Section -->
+        <section class="monitoring-section">
+            <h2 class="section-title">
+                
+                Start New Monitoring
+            </h2>
             
-            <div class="monitoring-section">
-                <h2>📱 Real-time Route Monitoring</h2>
-                <p>Get real-time pop-up alerts when traffic conditions change significantly on your route.</p>
+            <form class="monitoring-form" id="monitoringForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            
+                            Origin
+                        </label>
+                        <input type="text" class="form-input" id="origin" placeholder="Enter starting location" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            
+                            Destination
+                        </label>
+                        <input type="text" class="form-input" id="destination" placeholder="Enter destination" required>
+                    </div>
+                </div>
                 
                 <div class="form-group">
-                    <label for="threshold">⏱️ Alert Threshold (minutes)</label>
-                    <input type="number" id="threshold" value="10" min="5" max="60" placeholder="10">
+                    <label class="form-label">
+                        
+                        Alert Threshold (minutes)
+                    </label>
+                    <input type="number" class="form-input" id="threshold" placeholder="10" min="1" max="60" value="10">
+                    <small style="color: rgba(224, 224, 224, 0.6); margin-top: 0.5rem;">
+                        Get alerts when travel time changes by this amount
+                    </small>
                 </div>
                 
-                <div class="monitoring-controls">
-                    <button class="btn btn-secondary" onclick="startMonitoring()">🔔 Start Monitoring</button>
-                    <button class="btn" onclick="stopMonitoring()" id="stopBtn" style="display:none;">⏹️ Stop Monitoring</button>
-                </div>
+                <button type="submit" class="btn-primary">
+                    
+                    <span class="btn-text">Start Monitoring</span>
+                    <div class="loading" style="display: none;"></div>
+                </button>
+            </form>
+        </section>
+
+        <!-- Active Monitors Section -->
+        <section class="monitoring-section">
+            <h2 class="section-title">
                 
-                <div id="monitoringStatus" class="monitoring-status" style="display:none;">
-                    <h4><span class="status-indicator status-stopped" id="statusIndicator"></span>Monitoring Status</h4>
-                    <p id="statusText">Not monitoring</p>
-                    <p id="lastCheck"></p>
+                Active Monitors
+            </h2>
+            
+            <div id="activeMonitors" class="active-monitors">
+                <div class="empty-state">
+                    
+                    <p>No active monitors</p>
+                    <small>Start monitoring a route to see real-time updates here</small>
                 </div>
             </div>
-        </div>
-    </div>
-    
+        </section>
+
+        <!-- Live Alerts Section -->
+        <section class="monitoring-section alerts-section">
+            <h2 class="section-title">
+                
+                Live Alerts
+            </h2>
+            
+            <div id="alertsContainer">
+                <div class="empty-state">
+                    
+                    <p>No alerts yet</p>
+                    <small>Traffic alerts will appear here when conditions change</small>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Socket.IO for real-time updates -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+
     <script>
-        let socket;
-        let currentSessionId = null;
+        // Icons removed
         
-        // Load route information from sessionStorage
-        document.addEventListener('DOMContentLoaded', function() {
-            const origin = sessionStorage.getItem('origin');
-            const destination = sessionStorage.getItem('destination');
-            
-            if (origin && destination) {
-                document.getElementById('routeDisplay').innerHTML = `
-                    <strong>From:</strong> ${origin}<br>
-                    <strong>To:</strong> ${destination}
-                `;
-            } else {
-                document.getElementById('routeDisplay').innerHTML = `
-                    <span style="color: #e74c3c;">No route information found. Please return to home and enter your locations.</span>
-                `;
-            }
-            
-            // Initialize Socket.IO connection
-            initializeSocket();
+
+        // Socket.IO connection with error handling
+        const socket = io({
+            transports: ['polling', 'websocket'],
+            upgrade: true,
+            rememberUpgrade: false,
+            timeout: 20000,
+            forceNew: false
         });
-        
-        function initializeSocket() {
-            try {
-                socket = io();
-                
-                socket.on('connect', function() {
-                    console.log('Connected to server');
-                    showNotification('success', 'Connected', 'Real-time monitoring service connected');
-                });
-                
-                socket.on('traffic_alert', function(data) {
-                    showNotification(data.type, data.title, `${data.message}<br><strong>Change:</strong> ${data.change}`, 8000);
-                    playNotificationSound();
-                });
-                
-                socket.on('monitoring_status', function(data) {
-                    if (data.session_id === currentSessionId) {
-                        updateMonitoringStatus(data);
-                    }
-                });
-                
-                socket.on('monitoring_error', function(data) {
-                    showNotification('error', 'Monitoring Error', data.error);
-                });
-                
-                socket.on('monitoring_stopped', function(data) {
-                    if (data.session_id === currentSessionId) {
-                        showNotification('warning', 'Monitoring Stopped', 'Route monitoring has been stopped');
-                        resetMonitoringUI();
-                    }
-                });
-                
-                socket.on('disconnect', function() {
-                    console.log('Disconnected from server');
-                    showNotification('warning', 'Disconnected', 'Lost connection to monitoring service');
-                });
-                
-            } catch (error) {
-                console.error('Socket.IO initialization error:', error);
-                showNotification('error', 'Connection Error', 'Failed to initialize real-time monitoring');
-            }
-        }
-        
-        function showNotification(type, title, message, duration = 5000) {
-            const container = document.getElementById('notificationContainer');
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
+        let activeMonitors = {};
+
+        // Socket connection events
+        socket.on('connect', function() {
+            console.log('Connected to monitoring service');
+            showAlert('Connected to real-time monitoring service', 'success');
+        });
+
+        socket.on('disconnect', function() {
+            console.log('Disconnected from monitoring service');
+            showAlert('Disconnected from monitoring service', 'warning');
+        });
+
+        socket.on('connect_error', function(error) {
+            console.error('Connection error:', error);
+            showAlert('Connection error - monitoring may not work properly', 'error');
+        });
+
+        // Form handling
+        document.getElementById('monitoringForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            notification.innerHTML = `
-                <button class="close-btn" onclick="removeNotification(this)">&times;</button>
-                <h4>${title}</h4>
-                <p>${message}</p>
-                <div class="timestamp">${new Date().toLocaleTimeString()}</div>
-            `;
-            
-            container.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    removeNotification(notification.querySelector('.close-btn'));
-                }
-            }, duration);
-        }
-        
-        function removeNotification(closeBtn) {
-            const notification = closeBtn.parentNode;
-            notification.style.animation = 'slideIn 0.3s ease-out reverse';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }
-        
-        function playNotificationSound() {
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.5);
-            } catch (error) {
-                console.log('Audio context not available:', error);
-            }
-        }
-        
-        async function startMonitoring() {
-            const origin = sessionStorage.getItem('origin');
-            const destination = sessionStorage.getItem('destination');
-            const threshold = document.getElementById('threshold').value;
+            const origin = document.getElementById('origin').value.trim();
+            const destination = document.getElementById('destination').value.trim();
+            const threshold = document.getElementById('threshold').value || 10;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const loading = submitBtn.querySelector('.loading');
             
             if (!origin || !destination) {
-                showNotification('error', 'Error', 'No route information found. Please return to home and enter your locations.');
+                showAlert('Please enter both origin and destination', 'error');
                 return;
             }
             
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            loading.style.display = 'block';
+            
             try {
-                // Prepare request data
-                const requestData = {
-                    origin: origin,
-                    destination: destination,
-                    threshold: parseInt(threshold)
-                };
-
                 const response = await fetch('/start_monitoring', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(requestData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    showNotification('error', 'Error', data.error);
-                    return;
-                }
-                
-                currentSessionId = data.session_id;
-                showNotification('success', 'Monitoring Started', `Route: ${data.origin} → ${data.destination}`);
-                
-                // Update UI
-                document.getElementById('stopBtn').style.display = 'inline-block';
-                document.getElementById('monitoringStatus').style.display = 'block';
-                document.getElementById('statusIndicator').className = 'status-indicator status-monitoring';
-                document.getElementById('statusText').textContent = `Monitoring route: ${data.origin} → ${data.destination}`;
-                
-                // Join monitoring session
-                if (socket && socket.connected) {
-                    socket.emit('join_monitoring', {session_id: currentSessionId});
-                }
-                
-            } catch (error) {
-                showNotification('error', 'Error', error.message);
-                console.error('Error in startMonitoring:', error);
-            }
-        }
-        
-        async function stopMonitoring() {
-            if (!currentSessionId) return;
-            
-            try {
-                const response = await fetch('/stop_monitoring', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
                     body: JSON.stringify({
-                        session_id: currentSessionId
+                        origin: origin,
+                        destination: destination,
+                        threshold: parseInt(threshold)
                     })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    showNotification('warning', 'Monitoring Stopped', 'Route monitoring has been stopped');
-                    resetMonitoringUI();
+                    showAlert(`Monitoring started for ${origin} → ${destination}`, 'success');
+                    
+                    // Add to active monitors
+                    activeMonitors[data.session_id] = {
+                        origin: data.origin,
+                        destination: data.destination,
+                        threshold: threshold,
+                        started_at: new Date().toLocaleTimeString()
+                    };
+                    
+                    updateActiveMonitors();
+                    
+                    // Clear form
+                    document.getElementById('origin').value = '';
+                    document.getElementById('destination').value = '';
+                    document.getElementById('threshold').value = '10';
+                    
+                    // Join monitoring session
+                    socket.emit('join_monitoring', { session_id: data.session_id });
+                } else {
+                    showAlert(data.error || 'Failed to start monitoring', 'error');
+                }
+            } catch (error) {
+                showAlert('Network error. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                loading.style.display = 'none';
+            }
+        });
+        
+        // Socket event handlers
+        socket.on('connect', function() {
+            console.log('Connected to monitoring service');
+            loadActiveMonitors();
+        });
+        
+        socket.on('traffic_alert', function(data) {
+            console.log('Traffic alert received:', data);
+            showAlert(data.message, data.type, data.title);
+        });
+        
+        socket.on('monitoring_status', function(data) {
+            console.log('Monitoring status:', data);
+            updateMonitorStatus(data.session_id, data);
+        });
+        
+        socket.on('monitoring_stopped', function(data) {
+            console.log('Monitoring stopped:', data);
+            if (activeMonitors[data.session_id]) {
+                delete activeMonitors[data.session_id];
+                updateActiveMonitors();
+            }
+        });
+        
+        // Load active monitors from server
+        async function loadActiveMonitors() {
+            try {
+                const response = await fetch('/active_monitors');
+                const data = await response.json();
+                
+                if (data.active_monitors) {
+                    activeMonitors = {};
+                    data.active_monitors.forEach(monitor => {
+                        activeMonitors[monitor.session_id] = monitor;
+                    });
+                    updateActiveMonitors();
+                }
+            } catch (error) {
+                console.error('Error loading active monitors:', error);
+            }
+        }
+        
+        // Update active monitors display
+        function updateActiveMonitors() {
+            const container = document.getElementById('activeMonitors');
+            const monitorKeys = Object.keys(activeMonitors);
+            
+            if (monitorKeys.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        
+                        <p>No active monitors</p>
+                        <small>Start monitoring a route to see real-time updates here</small>
+                    </div>
+                `;
+                
+                return;
+            }
+            
+            container.innerHTML = monitorKeys.map(sessionId => {
+                const monitor = activeMonitors[sessionId];
+                return `
+                    <div class="monitor-card" data-session-id="${sessionId}">
+                        <div class="monitor-header">
+                            <div class="monitor-route">
+                                <h4>
+                                    
+                                    ${monitor.origin} → ${monitor.destination}
+                                </h4>
+                                <div class="route-details">
+                                    Threshold: ${monitor.threshold} minutes • Started: ${monitor.started_at}
+                                </div>
+                            </div>
+                            <div class="monitor-status">
+                                <span class="status-badge active">
+                                    
+                                    Active
+                                </span>
+                                <button class="btn-danger" onclick="stopMonitoring('${sessionId}')">
+                                    
+                                    Stop
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            
+        }
+        
+        // Stop monitoring
+        async function stopMonitoring(sessionId) {
+            try {
+                const response = await fetch('/stop_monitoring', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('Monitoring stopped', 'success');
+                    delete activeMonitors[sessionId];
+                    updateActiveMonitors();
+                } else {
+                    showAlert('Failed to stop monitoring', 'error');
+                }
+            } catch (error) {
+                showAlert('Network error', 'error');
+                console.error('Error:', error);
+            }
+        }
+        
+        // Show alert
+        function showAlert(message, type = 'info', title = null) {
+            const container = document.getElementById('alertsContainer');
+            const alertId = 'alert-' + Date.now();
+            
+            // Remove empty state if present
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            const iconMap = {
+                success: 'check-circle',
+                error: 'alert-circle',
+                warning: 'alert-triangle',
+                info: 'info'
+            };
+            
+            const alertHTML = `
+                <div class="alert ${type}" id="${alertId}">
+                    <div class="alert-icon">
+                        
+                    </div>
+                    <div class="alert-content">
+                        ${title ? `<div class="alert-title">${title}</div>` : ''}
+                        <div class="alert-message">${message}</div>
+                        <div class="alert-time">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('afterbegin', alertHTML);
+            
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                const alertElement = document.getElementById(alertId);
+                if (alertElement) {
+                    alertElement.remove();
                 }
                 
-            } catch (error) {
-                showNotification('error', 'Error', error.message);
-                console.error('Error in stopMonitoring:', error);
+                // Show empty state if no alerts left
+                if (container.children.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            
+                            <p>No alerts yet</p>
+                            <small>Traffic alerts will appear here when conditions change</small>
+                        </div>
+                    `;
+                    
+                }
+            }, 10000);
+        }
+        
+        // Update monitor status
+        function updateMonitorStatus(sessionId, statusData) {
+            const monitorCard = document.querySelector(`[data-session-id="${sessionId}"]`);
+            if (monitorCard) {
+                const details = monitorCard.querySelector('.route-details');
+                if (details) {
+                    const monitor = activeMonitors[sessionId];
+                    details.innerHTML = `
+                        Threshold: ${monitor.threshold} minutes • 
+                        Started: ${monitor.started_at} • 
+                        Current: ${statusData.duration} min • 
+                        Checks: ${statusData.check_count}
+                    `;
+                }
             }
-        }
-        
-        function updateMonitoringStatus(data) {
-            const lastCheckElement = document.getElementById('lastCheck');
-            if (lastCheckElement) {
-                lastCheckElement.innerHTML = `
-                    <strong>Last Check:</strong> ${data.timestamp}<br>
-                    <strong>Current Duration:</strong> ${data.duration} minutes<br>
-                    <strong>Checks Performed:</strong> ${data.check_count}
-                `;
-            }
-        }
-        
-        function resetMonitoringUI() {
-            currentSessionId = null;
-            document.getElementById('stopBtn').style.display = 'none';
-            document.getElementById('statusIndicator').className = 'status-indicator status-stopped';
-            document.getElementById('statusText').textContent = 'Not monitoring';
-            document.getElementById('lastCheck').textContent = '';
-        }
-        
-        // Request notification permission
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
         }
     </script>
 </body>

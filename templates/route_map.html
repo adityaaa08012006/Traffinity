@@ -4,15 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Route Map - Traffinity</title>
-    
-    <!-- Leaflet Maps (More reliable than TomTom) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Leaflet Routing Machine for route display -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <style>
+        :root {
+            --charcoal-black: #1C1C1C;
+            --traffic-red: #D7263D;
+            --signal-yellow: #FFD23F;
+            --green-light: #21BF73;
+            --tech-gray: #E0E0E0;
+            --glass-bg: rgba(224, 224, 224, 0.05);
+            --glass-border: rgba(224, 224, 224, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -20,704 +25,953 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-            min-height: 100vh;
-            color: white;
+            font-family: 'Inter', sans-serif;
+            background: var(--charcoal-black);
+            color: var(--tech-gray);
+            line-height: 1.6;
             overflow-x: hidden;
         }
 
-        @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+        /* Header */
+        .header {
+            background: rgba(28, 28, 28, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
         }
 
-        .header {
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .header h1 {
-            font-size: 1.5em;
-            font-weight: 700;
         }
 
         .back-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #2c3e50;
-            padding: 10px 20px;
-            border-radius: 25px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--tech-gray);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
             text-decoration: none;
-            font-weight: 600;
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .back-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            color: #1a252f;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            border-color: var(--signal-yellow);
         }
 
+        .header-title {
+            color: var(--signal-yellow);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .route-info {
+            text-align: right;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding-top: 80px;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Map Container */
         .map-container {
-            height: calc(100vh - 80px);
-            width: 100%;
+            flex: 1;
             position: relative;
+            background: #2a2a2a;
         }
 
         #map {
             width: 100%;
             height: 100%;
+            z-index: 1;
         }
 
-        .route-info {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(15px);
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            max-width: 350px;
-            z-index: 1000;
-        }
-
-        .route-info h3 {
-            color: #42a5f5;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .info-label {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .info-value {
-            color: #ffffff;
-            font-weight: 600;
-        }
-
-        .traffic-delay {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: 700;
-        }
-
-        .traffic-delay.low {
-            background: linear-gradient(135deg, #00d4aa, #00b894);
-        }
-
-        .traffic-delay.medium {
-            background: linear-gradient(135deg, #ffa726, #ff9800);
-        }
-
-        .loading {
+        .map-placeholder {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 30px;
-            border-radius: 15px;
             text-align: center;
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            color: var(--tech-gray);
+            background: var(--glass-bg);
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
         }
 
-        /* Fix for white text in Leaflet Routing Machine directions */
-        .leaflet-routing-container {
-            background: rgba(0, 0, 0, 0.9) !important;
-            backdrop-filter: blur(15px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 10px !important;
-            padding: 15px !important;
+        .map-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
         }
 
-        .leaflet-routing-container h2,
-        .leaflet-routing-container h3 {
-            color: #42a5f5 !important;
-            font-size: 1.1em !important;
-            margin-bottom: 10px !important;
+        /* Sidebar */
+        .sidebar {
+            width: 350px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            overflow-y: auto;
         }
 
-        .leaflet-routing-alt {
-            color: #ffffff !important;
-            background: rgba(255, 255, 255, 0.05) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 8px !important;
-            margin: 5px 0 !important;
-            padding: 10px !important;
+        .sidebar-section {
+            margin-bottom: 2rem;
         }
 
-        .leaflet-routing-alt:hover {
-            background: rgba(255, 255, 255, 0.1) !important;
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--signal-yellow);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .leaflet-routing-alt-minimized {
-            color: #ffffff !important;
+        .route-summary {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
         }
 
-        .leaflet-routing-geocoders {
-            background: rgba(0, 0, 0, 0.8) !important;
-            border-radius: 8px !important;
-            padding: 10px !important;
+        .route-summary.optimal {
+            border-color: var(--green-light);
+            background: rgba(33, 191, 115, 0.05);
         }
 
-        .leaflet-routing-geocoder {
-            color: #ffffff !important;
+        .route-name {
+            font-weight: 600;
+            color: var(--tech-gray);
+            margin-bottom: 0.5rem;
         }
 
-        .leaflet-routing-geocoder input {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            color: #ffffff !important;
-            border-radius: 5px !important;
-            padding: 8px !important;
+        .route-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
         }
 
-        .leaflet-routing-geocoder input::placeholder {
-            color: rgba(255, 255, 255, 0.6) !important;
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
         }
 
-        /* Style the actual turn-by-turn directions */
-        .leaflet-routing-instructions-container {
-            background: rgba(0, 0, 0, 0.9) !important;
-            border-radius: 10px !important;
-            padding: 15px !important;
-            max-height: 300px !important;
-            overflow-y: auto !important;
+        .optimal-badge {
+            background: var(--green-light);
+            color: var(--charcoal-black);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 0.5rem;
         }
 
-        .leaflet-routing-instruction {
-            color: #ffffff !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-            padding: 8px 0 !important;
+        /* Instructions */
+        .instructions-list {
+            max-height: 300px;
+            overflow-y: auto;
         }
 
-        .leaflet-routing-instruction:last-child {
-            border-bottom: none !important;
+        .instruction-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            font-size: 0.9rem;
         }
 
-        .leaflet-routing-instruction-icon {
-            background: rgba(66, 165, 245, 0.2) !important;
-            border-radius: 3px !important;
+        .instruction-icon {
+            color: var(--signal-yellow);
+            flex-shrink: 0;
+            margin-top: 0.1rem;
         }
 
-        .leaflet-routing-instruction-distance {
-            color: #42a5f5 !important;
-            font-weight: bold !important;
+        .instruction-text {
+            flex: 1;
+            line-height: 1.4;
         }
 
-        .leaflet-routing-instruction-text {
-            color: #ffffff !important;
+        .instruction-distance {
+            color: var(--tech-gray);
+            opacity: 0.6;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
         }
 
-        /* Style the collapse/expand button */
-        .leaflet-routing-collapse-btn {
-            background: rgba(66, 165, 245, 0.8) !important;
-            color: #ffffff !important;
-            border: none !important;
-            border-radius: 3px !important;
-            padding: 5px 10px !important;
+        /* Controls */
+        .map-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 100;
         }
 
-        .leaflet-routing-collapse-btn:hover {
-            background: rgba(66, 165, 245, 1) !important;
+        .control-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            color: var(--tech-gray);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
+        .control-btn:hover {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            border-color: var(--signal-yellow);
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .route-info {
-                position: static;
-                max-width: 100%;
-                margin: 10px;
-                border-radius: 10px;
-            }
-            
-            .map-container {
-                height: calc(60vh);
+            .main-content {
+                flex-direction: column;
             }
 
-            .leaflet-routing-container {
-                font-size: 14px !important;
+            .sidebar {
+                width: 100%;
+                height: 300px;
+                border-left: none;
+                border-top: 1px solid var(--glass-border);
             }
+
+            .header-content {
+                padding: 0 1rem;
+            }
+
+            .route-info {
+                display: none;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(224, 224, 224, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--signal-yellow);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🗺️ Route Map View</h1>
-        <a href="/prediction" class="back-btn">← Back to Results</a>
-    </div>
-
-    <div class="map-container">
-        <div id="map"></div>
-        
-        <div class="route-info" id="routeInfo" style="display: none;">
-            <h3 id="routeName">Loading Route...</h3>
-            <div class="info-item">
-                <span class="info-label">Duration:</span>
-                <span class="info-value" id="routeDuration">--</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Distance:</span>
-                <span class="info-value" id="routeDistance">--</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Traffic Delay:</span>
-                <span class="info-value">
-                    <span class="traffic-delay" id="routeDelay">--</span>
-                </span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Major Roads:</span>
-                <span class="info-value" id="majorRoads">--</span>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="javascript:history.back()" class="back-btn">
+                
+                Back
+            </a>
+            <h1 class="header-title">
+                
+                Route Visualization
+            </h1>
+            <div class="route-info" id="routeInfo">
+                Loading route...
             </div>
         </div>
+    </header>
 
-        <div class="loading" id="loading">
-            <h3>🔄 Loading Route Map...</h3>
-            <p>Fetching route geometry and traffic data</p>
-        </div>
-    </div>
-
-    <script>
-        console.log('🚀 Loading Leaflet Maps - More reliable than TomTom!');
-        
-        let map;
-        let routeData;
-        let routingControl;
-
-        // Initialize Leaflet map - but wait for actual coordinates to avoid NYC flash
-        function initMap() {
-            console.log('🗺️ Initializing Leaflet map - will load with actual locations');
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-placeholder" id="mapPlaceholder" style="display: none;">
+                🗺️
+                <h3>Loading Route Data</h3>
+                <p>Checking for route information...</p>
+                <div class="loading"></div>
+            </div>
             
-            // Don't create map immediately - wait for route data first
-            loadRouteData();
-        }
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button class="control-btn" title="Zoom In" onclick="zoomIn()">
+                    +
+                </button>
+                <button class="control-btn" title="Zoom Out" onclick="zoomOut()">
+                    -
+                </button>
+                <button class="control-btn" title="Reset View" onclick="resetView()">
+                    🎯
+                </button>
+                <button class="control-btn" title="My Location" onclick="showMyLocation()">
+                    📍
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Route Summary -->
+            <div class="sidebar-section">
+                <h2 class="sidebar-title">
+                    
+                    Route Summary
+                </h2>
+                <div id="routeSummary">
+                    <div class="loading"></div>
+                    Loading route details...
+                </div>
+            </div>
+
+            <!-- Turn-by-Turn Instructions -->
+            <div class="sidebar-section">
+                <h2 class="sidebar-title">
+                    
+                    Directions
+                </h2>
+                <div id="instructions" class="instructions-list">
+                    <div class="loading"></div>
+                    Loading directions...
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="sidebar-section">
+                <h2 class="sidebar-title">
+                    
+                    Route Info
+                </h2>
+                <div id="additionalInfo">
+                    <div class="instruction-item">
+                        
+                        <div class="instruction-text">
+                            Real-time traffic data
+                            <div class="instruction-distance">Updated continuously</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item">
+                        
+                        <div class="instruction-text">
+                            Weather-adjusted timing
+                            <div class="instruction-distance">Accounts for conditions</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item">
+                        
+                        <div class="instruction-text">
+                            Traffic incidents
+                            <div class="instruction-distance">Live incident data</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        // Global variables
+        let map;
+        let routeLayer;
+        let markersLayer;
         
-        // Create map with correct center coordinates
-        async function createMapWithLocation(originCoords, destCoords) {
+        // Get route ID from URL
+        const routeId = window.location.pathname.split('/').pop();
+        
+        // Load route data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            // Delay route data loading to allow map to initialize and wait for actual data
+            setTimeout(() => {
+                loadRouteData();
+            }, 500);
+        });
+        
+        function initializeMap() {
             try {
-                console.log('🗺️ Creating map centered on route locations');
+                // Show loading placeholder initially
+                showMapPlaceholder();
                 
-                // Calculate center point between origin and destination
-                const centerLat = (originCoords.lat + destCoords.lat) / 2;
-                const centerLon = (originCoords.lon + destCoords.lon) / 2;
+                // Initialize the map with a neutral view (will be updated with actual data)
+                map = L.map('map').setView([39.8283, -98.5795], 4); // Center of US, low zoom
                 
-                // Create map centered on the route
-                map = L.map('map').setView([centerLat, centerLon], 10);
-                
-                // Add OpenStreetMap tiles
+                // Add OpenStreetMap tile layer
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
-                    maxZoom: 18,
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap contributors'
                 }).addTo(map);
                 
-                console.log('✅ Leaflet map created at correct location');
+                // Create layer groups for routes and markers
+                routeLayer = L.layerGroup().addTo(map);
+                markersLayer = L.layerGroup().addTo(map);
                 
-                // Hide loading screen now that map is ready
-                document.getElementById('loading').style.display = 'none';
-                
-                return true;
+                console.log('Map initialized successfully, waiting for route data...');
                 
             } catch (error) {
-                console.error('❌ Error creating Leaflet map:', error);
-                document.getElementById('loading').innerHTML = `
-                    <h3>❌ Map Initialization Failed</h3>
-                    <p>Error: ${error.message}</p>
-                    <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
-                `;
-                return false;
+                console.error('Error initializing map:', error);
+                showMapPlaceholder();
             }
-        }
-
-        // Load route data from sessionStorage
-        function loadRouteData() {
-            const routeId = '{{ route_id }}';
-            console.log('🔍 Looking for route ID:', routeId);
-            
-            const storedRoutes = sessionStorage.getItem('routeData');
-            const selectedRoute = sessionStorage.getItem('selectedRoute');
-            const origin = sessionStorage.getItem('origin');
-            const destination = sessionStorage.getItem('destination');
-            
-            console.log('📊 Session storage data:', {
-                storedRoutes: storedRoutes ? 'Present' : 'Missing',
-                selectedRoute: selectedRoute ? 'Present' : 'Missing',
-                origin: origin,
-                destination: destination,
-                routeId: routeId
-            });
-            
-            // Try the selected route first (this should work for clicked routes)
-            if (selectedRoute) {
-                try {
-                    routeData = JSON.parse(selectedRoute);
-                    console.log('✅ Found selected route:', routeData);
-                    console.log('🛣️ Route details:', {
-                        name: routeData.name,
-                        distance: routeData.distance,
-                        duration: routeData.duration,
-                        traffic_delay: routeData.traffic_delay
-                    });
-                    displayRoute();
-                    return;
-                } catch (e) {
-                    console.error('❌ Error parsing selected route:', e);
-                }
-            }
-            
-            // Fallback to searching through all routes by ID
-            if (storedRoutes) {
-                try {
-                    const routes = JSON.parse(storedRoutes);
-                    console.log('🔍 Searching through available routes:', routes.map(r => r.route_id || 'No ID'));
-                    routeData = routes.find(route => route.route_id === routeId);
-                    
-                    if (routeData) {
-                        console.log('✅ Found route by ID:', routeData);
-                        displayRoute();
-                        return;
-                    } else {
-                        console.error('❌ Route not found:', routeId);
-                    }
-                } catch (error) {
-                    console.error('❌ Error parsing stored routes:', error);
-                }
-            }
-            
-            // Last resort - show basic route if we have origin/destination
-            console.log('⚠️ Falling back to basic route calculation');
-            document.getElementById('loading').style.display = 'none';
-            showBasicMapMessage(`Specific route "${routeId}" not found. Showing basic route calculation.`);
-            displayRoute();
         }
         
-        // Show basic map with message
-        function showBasicMapMessage(message) {
-            const routeInfoElement = document.getElementById('routeInfo');
-            if (routeInfoElement) {
-                routeInfoElement.style.display = 'block';
-                routeInfoElement.innerHTML = `
-                    <h3>🗺️ Map View</h3>
-                    <p>${message}</p>
-                    <p>The map is still functional for general navigation.</p>
-                    <button onclick="window.close()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Close Window</button>
-                `;
+        function showMapPlaceholder() {
+            document.getElementById('mapPlaceholder').style.display = 'block';
+        }
+        
+        function hideMapPlaceholder() {
+            document.getElementById('mapPlaceholder').style.display = 'none';
+        }
+        
+        // Map control functions
+        function zoomIn() {
+            if (map) map.zoomIn();
+        }
+        
+        function zoomOut() {
+            if (map) map.zoomOut();
+        }
+        
+        function resetView() {
+            if (map && routeLayer.getLayers().length > 0) {
+                map.fitBounds(routeLayer.getBounds());
             }
         }
-
-        // Display route on map using Leaflet
-        function displayRoute() {
-            const origin = sessionStorage.getItem('origin');
-            const destination = sessionStorage.getItem('destination');
-
-            console.log('displayRoute called with:', { origin, destination });
-
-            if (!origin || !destination) {
-                console.error('Missing origin or destination:', { origin, destination });
-                showBasicMapMessage(`Missing location data. Origin: ${origin || 'Not found'}, Destination: ${destination || 'Not found'}`);
-                return;
+        
+        function showMyLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    if (map) {
+                        map.setView([lat, lng], 15);
+                        
+                        // Add marker for current location
+                        L.marker([lat, lng])
+                            .addTo(markersLayer)
+                            .bindPopup('📍 Your Location')
+                            .openPopup();
+                    }
+                }, function(error) {
+                    alert('Unable to get your location: ' + error.message);
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
             }
-
-            console.log('🚀 Creating route from', origin, 'to', destination);
-            createRoute(origin, destination);
         }
-
-        // Create route using Leaflet Routing Machine with different options per route type
-        async function createRoute(origin, destination) {
+        
+        async function loadRouteData() {
             try {
-                console.log('🗺️ Creating route with Leaflet Routing Machine');
-                console.log('📋 Route data:', routeData);
+                console.log('Loading route data...');
                 
-                // Geocode locations using backend API
+                // Get origin and destination from sessionStorage
+                const origin = sessionStorage.getItem('origin');
+                const destination = sessionStorage.getItem('destination');
+                
+                console.log('Origin:', origin, 'Destination:', destination);
+                
+                // Try to get route data from sessionStorage first
+                const routeData = sessionStorage.getItem('routeData');
+                const selectedRoute = sessionStorage.getItem('selectedRoute');
+                
+                if (routeData && origin && destination) {
+                    console.log('Found route data in sessionStorage');
+                    const routes = JSON.parse(routeData);
+                    let targetRoute = null;
+                    
+                    if (selectedRoute) {
+                        targetRoute = JSON.parse(selectedRoute);
+                    } else {
+                        // Find route by ID or use first route
+                        targetRoute = routes[0];
+                    }
+                    
+                    if (targetRoute) {
+                        console.log('Displaying route:', targetRoute.name);
+                        displayRouteData(targetRoute, origin, destination);
+                        return;
+                    }
+                }
+                
+                // If we have origin and destination, create a simple route
+                if (origin && destination) {
+                    console.log('Creating route from locations');
+                    await displayRouteFromLocations(origin, destination);
+                } else {
+                    console.log('No route data found, showing no data message');
+                    // Show message that no route data is available
+                    displayNoRouteData();
+                }
+                
+            } catch (error) {
+                console.error('Error loading route data:', error);
+                displayNoRouteData();
+            }
+        }
+        
+        async function displayRouteFromLocations(origin, destination) {
+            try {
+                console.log('Getting route from', origin, 'to', destination);
+                
+                // Geocode origin and destination
                 const originCoords = await geocodeLocation(origin);
                 const destCoords = await geocodeLocation(destination);
                 
-                if (!originCoords || !destCoords) {
-                    throw new Error('Could not find locations');
-                }
-                
-                console.log('📍 Origin:', originCoords, 'Destination:', destCoords);
-                
-                // Create map with correct center if not already created
-                if (!map) {
-                    const mapCreated = await createMapWithLocation(originCoords, destCoords);
-                    if (!mapCreated) {
-                        return;
-                    }
-                }
-                
-                // Remove existing route if any
-                if (routingControl) {
-                    map.removeControl(routingControl);
-                }
-                
-                // Determine routing options based on route type
-                let routingOptions = {
-                    waypoints: [
-                        L.latLng(originCoords.lat, originCoords.lon),
-                        L.latLng(destCoords.lat, destCoords.lon)
-                    ],
-                    routeWhileDragging: false,
-                    showAlternatives: false,
-                    addWaypoints: false,
-                    createMarker: function(i, waypoint, n) {
-                        const isStart = i === 0;
-                        const marker = L.marker(waypoint.latLng, {
-                            icon: L.divIcon({
-                                className: 'custom-marker',
-                                html: `<div style="background: ${isStart ? '#22c55e' : '#ef4444'}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>`,
-                                iconSize: [20, 20],
-                                iconAnchor: [10, 10]
-                            })
-                        });
-                        
-                        marker.bindPopup(isStart ? `🚗 Start: ${origin}` : `🎯 Destination: ${destination}`);
-                        return marker;
-                    }
-                };
-                
-                // Customize route appearance and behavior based on route type
-                if (routeData && routeData.name) {
-                    const routeName = routeData.name.toLowerCase();
+                if (originCoords && destCoords) {
+                    console.log('Coordinates found:', originCoords, destCoords);
                     
-                    if (routeName.includes('fastest') || routeName.includes('quick')) {
-                        // Fastest route - blue line
-                        routingOptions.lineOptions = {
-                            styles: [{
-                                color: '#2563eb',
-                                weight: 7,
-                                opacity: 0.9
-                            }]
-                        };
-                        routingOptions.router = L.Routing.osrmv1({
-                            serviceUrl: 'https://router.project-osrm.org/route/v1',
-                            profile: 'driving'
-                        });
-                        console.log('🚀 Using fastest route configuration');
-                        
-                    } else if (routeName.includes('shortest') || routeName.includes('direct')) {
-                        // Shortest route - green line
-                        routingOptions.lineOptions = {
-                            styles: [{
-                                color: '#16a34a',
-                                weight: 6,
-                                opacity: 0.8
-                            }]
-                        };
-                        console.log('📏 Using shortest route configuration');
-                        
-                    } else if (routeName.includes('scenic') || routeName.includes('alternate')) {
-                        // Scenic/alternate route - purple line
-                        routingOptions.lineOptions = {
-                            styles: [{
-                                color: '#9333ea',
-                                weight: 6,
-                                opacity: 0.8
-                            }]
-                        };
-                        console.log('🌄 Using scenic route configuration');
-                        
+                    // Try to get proper routing with directions
+                    const routeData = await getRoutingDirections(originCoords, destCoords);
+                    
+                    if (routeData && routeData.coordinates) {
+                        // Display the routed path
+                        displayActualRoute(routeData, origin, destination);
                     } else {
-                        // Default route - orange line
-                        routingOptions.lineOptions = {
-                            styles: [{
-                                color: '#ea580c',
-                                weight: 6,
-                                opacity: 0.8
-                            }]
-                        };
-                        console.log('🛣️ Using default route configuration');
+                        // Fallback to straight line
+                        displayStraightLineRoute(originCoords, destCoords, origin, destination);
                     }
+                    
+                    hideMapPlaceholder();
                 } else {
-                    // Fallback styling
-                    routingOptions.lineOptions = {
-                        styles: [{
-                            color: '#6b7280',
-                            weight: 5,
-                            opacity: 0.7
-                        }]
-                    };
+                    throw new Error('Could not geocode locations');
                 }
-                
-                // Create route with custom options
-                routingControl = L.Routing.control(routingOptions).addTo(map);
-                
-                // Listen for route found
-                routingControl.on('routesfound', function(e) {
-                    console.log('✅ Route found successfully!');
-                    const route = e.routes[0];
-                    
-                    // Use stored route data if available, otherwise use calculated data
-                    const displayData = {
-                        name: routeData?.name || 'Selected Route',
-                        duration: routeData?.duration || (route.summary.totalTime / 60),
-                        distance: routeData?.distance || (route.summary.totalDistance / 1000),
-                        traffic_delay: routeData?.traffic_delay || 0
-                    };
-                    
-                    updateRouteInfo(displayData);
-                    
-                    console.log('📊 Route summary:', {
-                        name: displayData.name,
-                        distance: displayData.distance.toFixed(1) + ' km',
-                        duration: Math.round(displayData.duration) + ' minutes',
-                        traffic_delay: displayData.traffic_delay + ' min delay'
-                    });
-                });
-                
-                routingControl.on('routingerror', function(e) {
-                    console.error('❌ Routing error:', e);
-                    showBasicMapMessage('Could not calculate route. Showing locations only.');
-                });
                 
             } catch (error) {
-                console.error('❌ Error creating route:', error);
-                showBasicMapMessage(`Error: ${error.message}`);
+                console.error('Error creating route from locations:', error);
+                hideMapPlaceholder();
+                displayNoRouteData();
             }
         }
-
-        // Geocode location using backend API
+        
+        async function getRoutingDirections(originCoords, destCoords) {
+            try {
+                // Use OSRM (Open Source Routing Machine) for free routing
+                const url = `https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};${destCoords[1]},${destCoords[0]}?overview=full&geometries=geojson&steps=true`;
+                
+                console.log('Fetching routing data from OSRM...');
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    console.log('Got routing data:', route);
+                    
+                    return {
+                        coordinates: route.geometry.coordinates.map(coord => [coord[1], coord[0]]), // Swap lng,lat to lat,lng
+                        distance: route.distance / 1000, // Convert to km
+                        duration: route.duration / 60, // Convert to minutes
+                        steps: route.legs[0]?.steps || []
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Error getting routing directions:', error);
+                return null;
+            }
+        }
+        
+        function displayActualRoute(routeData, origin, destination) {
+            // Clear existing layers
+            routeLayer.clearLayers();
+            markersLayer.clearLayers();
+            
+            // Add markers for origin and destination
+            const originMarker = L.marker(routeData.coordinates[0])
+                .addTo(markersLayer)
+                .bindPopup(`🚀 Start: ${origin}`);
+            
+            const destMarker = L.marker(routeData.coordinates[routeData.coordinates.length - 1])
+                .addTo(markersLayer)
+                .bindPopup(`🎯 Destination: ${destination}`);
+            
+            // Create the routed polyline
+            const routeLine = L.polyline(routeData.coordinates, {
+                color: '#21BF73',
+                weight: 5,
+                opacity: 0.8
+            }).addTo(routeLayer);
+            
+            // Fit map to show the route
+            const group = new L.featureGroup([originMarker, destMarker, routeLine]);
+            map.fitBounds(group.getBounds().pad(0.1));
+            
+            // Display route information with directions
+            displayRouteInfoWithDirections({
+                name: `${origin} to ${destination}`,
+                distance: routeData.distance,
+                duration: routeData.duration,
+                origin: origin,
+                destination: destination,
+                steps: routeData.steps
+            });
+        }
+        
+        function displayStraightLineRoute(originCoords, destCoords, origin, destination) {
+            // Clear existing layers
+            routeLayer.clearLayers();
+            markersLayer.clearLayers();
+            
+            // Add markers for origin and destination
+            const originMarker = L.marker(originCoords)
+                .addTo(markersLayer)
+                .bindPopup(`🚀 Start: ${origin}`);
+            
+            const destMarker = L.marker(destCoords)
+                .addTo(markersLayer)
+                .bindPopup(`🎯 Destination: ${destination}`);
+            
+            // Create a simple polyline between points
+            const routeLine = L.polyline([originCoords, destCoords], {
+                color: '#FFD23F',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '10, 10'
+            }).addTo(routeLayer);
+            
+            // Fit map to show the route
+            const group = new L.featureGroup([originMarker, destMarker, routeLine]);
+            map.fitBounds(group.getBounds().pad(0.1));
+            
+            // Display route information
+            const distance = calculateDistance(originCoords, destCoords);
+            const estimatedTime = Math.round(distance * 2); // Rough estimate: 2 minutes per km
+            
+            displayRouteInfo({
+                name: `Direct Route: ${origin} to ${destination}`,
+                distance: distance,
+                duration: estimatedTime,
+                origin: origin,
+                destination: destination
+            });
+        }
+        
         async function geocodeLocation(location) {
             try {
-                console.log('🔍 Geocoding location:', location);
-                
-                const response = await fetch('/geocode', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ location: location })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Geocoding failed: ${response.status}`);
-                }
-                
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`);
                 const data = await response.json();
-                console.log('📍 Geocoding result:', data);
                 
-                if (data && data.lat && data.lon) {
-                    return {
-                        lat: parseFloat(data.lat),
-                        lon: parseFloat(data.lon),
-                        address: data.address || location
-                    };
+                if (data && data.length > 0) {
+                    return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
                 }
-                
                 return null;
             } catch (error) {
-                console.error('❌ Geocoding error for', location, ':', error);
+                console.error('Geocoding error:', error);
                 return null;
             }
         }
-
-        // This function is now handled by Leaflet Routing Machine automatically!
-
-        // Update route info panel
-        function updateRouteInfo(liveRouteData) {
-            const dataToUse = liveRouteData || routeData;
+        
+        function calculateDistance(coord1, coord2) {
+            const R = 6371; // Radius of Earth in km
+            const dLat = (coord2[0] - coord1[0]) * Math.PI / 180;
+            const dLon = (coord2[1] - coord1[1]) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(coord1[0] * Math.PI / 180) * Math.cos(coord2[0] * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // Distance in km
+        }
+        
+        function displayRouteData(route, origin, destination) {
+            displayRouteInfo(route);
             
-            if (dataToUse) {
-                document.getElementById('routeName').textContent = dataToUse.name || 'Route';
-                document.getElementById('routeDuration').textContent = formatDuration(dataToUse.duration);
-                document.getElementById('routeDistance').textContent = `${dataToUse.distance.toFixed(1)} km`;
-                
-                const delayElement = document.getElementById('routeDelay');
-                const delayClass = dataToUse.traffic_delay > 20 ? 'high' : dataToUse.traffic_delay > 10 ? 'medium' : 'low';
-                delayElement.className = `traffic-delay ${delayClass}`;
-                delayElement.textContent = formatDuration(dataToUse.traffic_delay);
-                
-                document.getElementById('majorRoads').textContent = dataToUse.major_roads && dataToUse.major_roads.length > 0 
-                    ? dataToUse.major_roads.join(', ') 
-                    : 'Route calculated by OpenStreetMap';
-                
-                document.getElementById('routeInfo').style.display = 'block';
+            // If we have coordinates in the route data, display them on map
+            if (route.coordinates && route.coordinates.length > 0) {
+                displayRouteOnMap(route.coordinates, route.name);
+            } else if (origin && destination) {
+                // Try to create route from origin and destination
+                displayRouteFromLocations(origin, destination);
             }
         }
-
-        // Format duration helper
+        
+        function displayRouteInfo(route) {
+            // Update header info
+            const duration = route.duration || route.weather_adjusted_duration || 0;
+            document.getElementById('routeInfo').textContent = `${route.name} • ${formatDuration(duration)}`;
+            
+            // Display route summary
+            const summaryHTML = `
+                <div class="route-summary optimal">
+                    <div class="route-name">
+                        ${route.name}
+                        <span class="optimal-badge">Live Route</span>
+                    </div>
+                    <div class="route-stats">
+                        <div class="stat-item">
+                            ⏱️
+                            ${formatDuration(duration)}
+                        </div>
+                        <div class="stat-item">
+                            📏
+                            ${(route.distance || 0).toFixed(1)} km
+                        </div>
+                        <div class="stat-item">
+                            ⛽
+                            ${route.fuel_consumption ? route.fuel_consumption.toFixed(2) + 'L' : 'Est. 1.2L'}
+                        </div>
+                        <div class="stat-item">
+                            🚦
+                            ${formatDuration(route.traffic_delay || 0)} delay
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('routeSummary').innerHTML = summaryHTML;
+            
+            // Display basic instructions
+            document.getElementById('instructions').innerHTML = `
+                <div class="instruction-item">
+                    ℹ️
+                    <div class="instruction-text">
+                        Route displayed on map. For detailed turn-by-turn directions, use navigation apps.
+                    </div>
+                </div>
+            `;
+        }
+        
+        function displayRouteInfoWithDirections(route) {
+            // Update header info
+            document.getElementById('routeInfo').textContent = `${route.name} • ${formatDuration(route.duration)}`;
+            
+            // Display route summary
+            const summaryHTML = `
+                <div class="route-summary optimal">
+                    <div class="route-name">
+                        ${route.name}
+                        <span class="optimal-badge">Live Route</span>
+                    </div>
+                    <div class="route-stats">
+                        <div class="stat-item">
+                            ⏱️
+                            ${formatDuration(route.duration)}
+                        </div>
+                        <div class="stat-item">
+                            📏
+                            ${route.distance.toFixed(1)} km
+                        </div>
+                        <div class="stat-item">
+                            ⛽
+                            Est. ${(route.distance * 0.08).toFixed(1)}L
+                        </div>
+                        <div class="stat-item">
+                            🚦
+                            Live traffic
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('routeSummary').innerHTML = summaryHTML;
+            
+            // Display turn-by-turn directions
+            if (route.steps && route.steps.length > 0) {
+                const instructionsHTML = route.steps.map((step, index) => {
+                    const instruction = step.maneuver?.instruction || step.instruction || `Continue for ${(step.distance/1000).toFixed(1)} km`;
+                    const distance = step.distance ? `${(step.distance/1000).toFixed(1)} km` : '';
+                    const icon = getDirectionIcon(step.maneuver?.type);
+                    
+                    return `
+                        <div class="instruction-item">
+                            ${icon}
+                            <div class="instruction-text">
+                                ${instruction}
+                                ${distance ? `<div class="instruction-distance">${distance}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('instructions').innerHTML = instructionsHTML;
+            } else {
+                document.getElementById('instructions').innerHTML = `
+                    <div class="instruction-item">
+                        🧭
+                        <div class="instruction-text">
+                            Head from ${route.origin} to ${route.destination}
+                            <div class="instruction-distance">Total: ${route.distance.toFixed(1)} km</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function getDirectionIcon(maneuverType) {
+            const icons = {
+                'depart': '🚀',
+                'arrive': '🎯',
+                'turn': '↩️',
+                'new name': '📍',
+                'continue': '⬆️',
+                'merge': '🔀',
+                'on ramp': '🔄',
+                'off ramp': '↗️',
+                'fork': '🔱',
+                'end of road': '⚠️',
+                'use lane': '🛣️',
+                'roundabout': '🔄'
+            };
+            return icons[maneuverType] || '🧭';
+        }
+        
+        function displayRouteOnMap(coordinates, routeName) {
+            try {
+                // Clear existing layers
+                routeLayer.clearLayers();
+                markersLayer.clearLayers();
+                
+                // Convert coordinates to Leaflet format if needed
+                const latLngs = coordinates.map(coord => [coord.lat || coord[0], coord.lng || coord[1]]);
+                
+                // Create route polyline
+                const routeLine = L.polyline(latLngs, {
+                    color: '#21BF73',
+                    weight: 4,
+                    opacity: 0.8
+                }).addTo(routeLayer);
+                
+                // Add start and end markers
+                if (latLngs.length > 0) {
+                    L.marker(latLngs[0])
+                        .addTo(markersLayer)
+                        .bindPopup('🚀 Start');
+                    
+                    L.marker(latLngs[latLngs.length - 1])
+                        .addTo(markersLayer)
+                        .bindPopup('🎯 Destination');
+                }
+                
+                // Fit map to route
+                map.fitBounds(routeLine.getBounds().pad(0.1));
+                
+            } catch (error) {
+                console.error('Error displaying route on map:', error);
+            }
+        }
+        
+        function displayNoRouteData() {
+            console.log('No route data available');
+            
+            // Hide map placeholder and show no data message
+            hideMapPlaceholder();
+            
+            // Update header to show no route available
+            document.getElementById('routeInfo').innerHTML = `
+                <span style="color: var(--traffic-red);">⚠️ No Route Data</span>
+                <br><small>Return to main page and analyze a route first</small>
+            `;
+            
+            // Display no data message in route summary
+            const noDataHTML = `
+                <div class="route-summary" style="border-color: var(--traffic-red); background: rgba(215, 38, 61, 0.1);">
+                    <div class="route-name" style="color: var(--traffic-red);">
+                        No Route Available
+                        <span class="optimal-badge" style="background: var(--traffic-red);">Missing Data</span>
+                    </div>
+                    <div style="margin-top: 15px; padding: 15px; background: var(--glass-bg); border-radius: 8px;">
+                        <p style="color: var(--tech-gray); margin-bottom: 10px;">To view a route on the map:</p>
+                        <ol style="color: rgba(224, 224, 224, 0.8); padding-left: 20px;">
+                            <li>Go back to the main page</li>
+                            <li>Enter your origin and destination</li>
+                            <li>Click "Analyze Traffic & Routes"</li>
+                            <li>Click "🗺️ View on Map" for any route</li>
+                        </ol>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('routeSummary').innerHTML = noDataHTML;
+            
+            // Display instructions for getting route data
+            const instructionsHTML = `
+                <div class="instruction-item">
+                    ❓
+                    <div class="instruction-text">
+                        No route instructions available
+                        <div class="instruction-distance">Analyze a route first to see directions</div>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    🏠
+                    <div class="instruction-text">
+                        Return to main page
+                        <div class="instruction-distance">Enter locations and analyze traffic</div>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    🗺️
+                    <div class="instruction-text">
+                        Click "View on Map" from results
+                        <div class="instruction-distance">Opens route visualization here</div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('instructions').innerHTML = instructionsHTML;
+            
+            // Show empty map with no specific location
+            if (map) {
+                // Reset to world view
+                map.setView([20, 0], 2);
+            }
+        }
+        
         function formatDuration(durationMinutes) {
             const totalSeconds = Math.round(durationMinutes * 60);
             const totalMinutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
             
-            // If duration is 60 minutes or more, show hours and minutes
             if (totalMinutes >= 60) {
                 const hours = Math.floor(totalMinutes / 60);
                 const minutes = totalMinutes % 60;
                 if (minutes === 0) {
-                    return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+                    return `${hours}h`;
                 } else {
-                    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+                    return `${hours}h ${minutes}m`;
                 }
             } else {
-                // Less than an hour, show minutes and seconds
-                return `${totalMinutes}m ${seconds}s`;
+                return `${totalMinutes}m`;
             }
         }
-
-        // Add immediate console log to verify JavaScript is loading
-        console.log('🚀 route_map.html JavaScript loaded');
-        console.log('📦 TomTom SDK available:', typeof tt !== 'undefined' ? 'Yes' : 'No');
-        
-        // Fallback function to show error if nothing works
-        function showFallbackError(reason) {
-            const loadingElement = document.getElementById('loading');
-            if (loadingElement) {
-                loadingElement.innerHTML = `
-                    <h3>❌ Map Loading Failed</h3>
-                    <p><strong>Reason:</strong> ${reason}</p>
-                    <p>Possible solutions:</p>
-                    <ul style="text-align: left; margin: 10px 0;">
-                        <li>Check internet connection</li>
-                        <li>Refresh the page</li>
-                        <li>Try again in a few moments</li>
-                    </ul>
-                    <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
-                `;
-            }
-        }
-        
-        // Initialize when page loads - Leaflet is much more reliable!
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔄 DOMContentLoaded event fired - initializing Leaflet map');
-            
-            // Check if Leaflet loaded (it's very reliable)
-            if (typeof L !== 'undefined') {
-                console.log('✅ Leaflet loaded successfully, initializing map');
-                initMap();
-            } else {
-                console.error('❌ Leaflet failed to load');
-                document.getElementById('loading').innerHTML = `
-                    <h3>❌ Map Library Failed to Load</h3>
-                    <p>Please check your internet connection and refresh the page.</p>
-                    <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
-                `;
-            }
-        });
     </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 import requests
 import json
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 from flask_socketio import SocketIO, emit
 import threading
 import time
@@ -13,7 +13,8 @@ WEATHER_API_KEY = "3f17cc8fc635e6b29600fb3de9e788fa"
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'traffinity_secret_key'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False, 
+                   async_mode='threading', ping_timeout=20, ping_interval=10)
 
 # Store active monitoring sessions
 active_monitors = {}
@@ -530,9 +531,24 @@ def monitor_route_conditions(origin_lat, origin_lon, dest_lat, dest_lon, session
     monitor_thread.start()
 
 @app.route('/')
-def main():
-    """Serve the main homepage"""
+def index():
+    """Redirect to auth page on app startup"""
+    return redirect('/auth')
+
+@app.route('/auth')
+def auth():
+    """Serve the authentication page"""
+    return render_template('auth.html')
+
+@app.route('/home')
+def home():
+    """Serve the main homepage after login"""
     return render_template('main.html')
+
+@app.route('/main')
+def main():
+    """Legacy route - redirect to home"""
+    return redirect('/home')
 
 @app.route('/prediction')
 def prediction():
@@ -547,7 +563,7 @@ def monitoring():
 @app.route('/dashboard')
 def dashboard():
     """Serve the dashboard page (legacy route for compatibility)"""
-    return render_template('index.html')
+    return redirect('/home')
 
 @app.route('/predict', methods=['POST'])
 def predict_traffic_route():
@@ -863,6 +879,147 @@ def handle_join_monitoring(data):
             'session_id': session_id,
             'message': f'Joined monitoring session {session_id}'
         })
+
+@app.route('/auth/login', methods=['POST'])
+def auth_login():
+    """Handle login requests"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password are required"}), 400
+        
+        # TODO: Replace with actual database authentication
+        # For now, simulate authentication logic
+        valid_users = {
+            "admin@traffinity.com": "password123",
+            "demo@traffinity.com": "demo123",
+            "test@traffinity.com": "test123"
+        }
+        
+        if email in valid_users and valid_users[email] == password:
+            # Successful login
+            user_data = {
+                "email": email,
+                "name": email.split('@')[0].title(),
+                "login_time": datetime.now().isoformat(),
+                "user_id": hash(email) % 10000  # Simple user ID generation
+            }
+            
+            print(f"✅ Login successful: {email}")
+            return jsonify({
+                "success": True,
+                "message": "Login successful",
+                "user": user_data
+            }), 200
+        else:
+            print(f"❌ Login failed: {email}")
+            return jsonify({"error": "Invalid email or password"}), 401
+            
+    except Exception as e:
+        print(f"Login error: {e}")
+        return jsonify({"error": "Login failed. Please try again."}), 500
+
+@app.route('/auth/register', methods=['POST'])
+def auth_register():
+    """Handle signup/registration requests"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        if not all([name, email, password]):
+            return jsonify({"error": "All fields are required"}), 400
+        
+        if len(password) < 8:
+            return jsonify({"error": "Password must be at least 8 characters long"}), 400
+        
+        # TODO: Replace with actual database storage
+        # For now, simulate user registration
+        existing_users = [
+            "admin@traffinity.com",
+            "demo@traffinity.com", 
+            "test@traffinity.com"
+        ]
+        
+        if email in existing_users:
+            return jsonify({"error": "User with this email already exists"}), 409
+        
+        # Simulate successful registration
+        user_data = {
+            "name": name,
+            "email": email,
+            "registered_at": datetime.now().isoformat(),
+            "user_id": hash(email) % 10000
+        }
+        
+        print(f"✅ Registration successful: {name} ({email})")
+        
+        # In a real app, you would:
+        # 1. Hash the password (using bcrypt or similar)
+        # 2. Store user data in database
+        # 3. Send verification email
+        # 4. Create user session
+        
+        return jsonify({
+            "success": True,
+            "message": "Account created successfully! You can now sign in.",
+            "user": user_data
+        }), 201
+        
+    except Exception as e:
+        print(f"Registration error: {e}")
+        return jsonify({"error": "Registration failed. Please try again."}), 500
+
+@app.route('/auth/logout', methods=['POST'])
+def auth_logout():
+    """Handle logout requests"""
+    try:
+        # In a real app, you would:
+        # 1. Invalidate the user session
+        # 2. Clear authentication tokens
+        # 3. Log the logout event
+        
+        print("✅ User logged out")
+        return jsonify({
+            "success": True,
+            "message": "Logged out successfully"
+        }), 200
+        
+    except Exception as e:
+        print(f"Logout error: {e}")
+        return jsonify({"error": "Logout failed"}), 500
+
+@app.route('/auth/verify', methods=['POST'])
+def verify_session():
+    """Verify if user session is valid"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '')
+        
+        # TODO: Replace with actual session verification
+        # For now, simulate session check
+        if email:
+            return jsonify({
+                "valid": True,
+                "user": {
+                    "email": email,
+                    "name": email.split('@')[0].title()
+                }
+            }), 200
+        else:
+            return jsonify({"valid": False}), 401
+            
+    except Exception as e:
+        return jsonify({"valid": False, "error": str(e)}), 500
+
+@app.route('/.well-known/appspecific/com.chrome.devtools.json')
+def chrome_devtools():
+    """Handle Chrome DevTools JSON request to prevent 404 errors in logs"""
+    return jsonify({"error": "Not supported"}), 404
 
 if __name__ == "__main__":
     # Check if API keys are set

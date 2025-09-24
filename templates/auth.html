@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Traffinity</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link  rel="stylesheet">
+    <style>
+        :root {
+            --charcoal-black: #1C1C1C;
+            --traffic-red: #D7263D;
+            --signal-yellow: #FFD23F;
+            --green-light: #21BF73;
+            --tech-gray: #E0E0E0;
+            --glass-bg: rgba(224, 224, 224, 0.05);
+            --glass-border: rgba(224, 224, 224, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--charcoal-black);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(255, 210, 63, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(33, 191, 115, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(215, 38, 61, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .auth-container {
+            max-width: 1000px;
+            width: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            min-height: 600px;
+        }
+        
+        /* Left Panel - Brand */
+        .brand-panel {
+            flex: 1;
+            background: linear-gradient(135deg, var(--charcoal-black) 0%, rgba(28, 28, 28, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            color: var(--tech-gray);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            border-right: 1px solid var(--glass-border);
+        }
+        
+        .back-btn {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--tech-gray);
+            padding: 8px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+        
+        .back-btn:hover {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            border-color: var(--signal-yellow);
+            opacity: 1;
+        }
+        
+        .back-btn.hidden {
+            display: none;
+        }
+        
+        .logo {
+            color: var(--signal-yellow);
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .brand-title {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--signal-yellow), var(--green-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .brand-subtitle {
+            font-size: 1.2em;
+            opacity: 0.8;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .features-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--tech-gray);
+            font-size: 1em;
+            opacity: 0.9;
+        }
+        
+        .feature-icon {
+            color: var(--signal-yellow);
+            flex-shrink: 0;
+        }
+        
+        /* Right Panel - Auth Forms */
+        .auth-panel {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .auth-title {
+            font-size: 2em;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--tech-gray);
+        }
+        
+        .auth-subtitle {
+            font-size: 1em;
+            opacity: 0.8;
+            color: var(--tech-gray);
+        }
+        
+        .toggle-container {
+            display: flex;
+            background: var(--glass-bg);
+            border-radius: 15px;
+            padding: 6px;
+            margin-bottom: 30px;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .toggle-btn {
+            flex: 1;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--tech-gray);
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            font-weight: 500;
+            opacity: 0.6;
+        }
+        
+        .toggle-btn.active {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            opacity: 1;
+            box-shadow: 0 4px 15px rgba(255, 210, 63, 0.3);
+        }
+        
+        .form-container {
+            position: relative;
+            min-height: 400px;
+        }
+        
+        .auth-form {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            opacity: 0;
+            transform: translateX(30px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+        
+        .auth-form.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: all;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        .form-label {
+            display: block;
+            color: var(--tech-gray);
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(28, 28, 28, 0.8);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--tech-gray);
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--signal-yellow);
+            box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.2);
+        }
+        
+        .form-input::placeholder {
+            color: rgba(224, 224, 224, 0.5);
+        }
+        
+        .password-container {
+            position: relative;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--tech-gray);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            opacity: 0.6;
+        }
+        
+        .password-toggle:hover {
+            opacity: 1;
+            background: var(--glass-bg);
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .submit-btn:hover {
+            background: var(--traffic-red);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(215, 38, 61, 0.3);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            color: var(--tech-gray);
+            opacity: 0.5;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--glass-border);
+        }
+        
+        .divider span {
+            padding: 0 15px;
+            font-size: 0.9em;
+        }
+        
+        .social-login {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .social-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--tech-gray);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .social-btn:hover {
+            background: var(--green-light);
+            color: var(--charcoal-black);
+            border-color: var(--green-light);
+            transform: translateY(-1px);
+        }
+        
+        .forgot-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .forgot-link a {
+            color: var(--signal-yellow);
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .forgot-link a:hover {
+            color: var(--traffic-red);
+            text-decoration: underline;
+        }
+        
+        .error-message, .success-message {
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .error-message {
+            background: rgba(215, 38, 61, 0.1);
+            border: 1px solid var(--traffic-red);
+            color: var(--traffic-red);
+        }
+        
+        .success-message {
+            background: rgba(33, 191, 115, 0.1);
+            border: 1px solid var(--green-light);
+            color: var(--green-light);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(224, 224, 224, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--signal-yellow);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .auth-container {
+                flex-direction: column;
+                max-width: 450px;
+                min-height: auto;
+            }
+            
+            .brand-panel {
+                border-right: none;
+                border-bottom: 1px solid var(--glass-border);
+                padding: 30px 20px;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .brand-title {
+                font-size: 2em;
+            }
+            
+            .brand-subtitle {
+                font-size: 1em;
+            }
+            
+            .features-list {
+                display: none;
+            }
+            
+            .auth-panel {
+                padding: 30px 20px;
+            }
+            
+            .auth-title {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <!-- Left Panel - Brand -->
+        <div class="brand-panel">
+            <a href="/home" class="back-btn" id="backBtn">
+                
+                Back
+            </a>
+            
+            <div class="logo">
+                
+            </div>
+            
+            <h1 class="brand-title">Traffinity</h1>
+            <p class="brand-subtitle">Your intelligent traffic companion for smarter journeys</p>
+            
+            <div class="features-list">
+                <div class="feature-item">
+                    
+                    <span>AI-powered traffic predictions</span>
+                </div>
+                <div class="feature-item">
+                    
+                    <span>Weather-adjusted routing</span>
+                </div>
+                <div class="feature-item">
+                    
+                    <span>Interactive route visualization</span>
+                </div>
+                <div class="feature-item">
+                    
+                    <span>Real-time traffic monitoring</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Auth Forms -->
+        <div class="auth-panel">
+            <div class="auth-header">
+                <h1 class="auth-title" id="authTitle">Welcome Back</h1>
+                <p class="auth-subtitle" id="authSubtitle">Sign in to access your traffic insights</p>
+            </div>
+            
+            <div class="toggle-container">
+                <button class="toggle-btn active" onclick="switchToLogin()">Sign In</button>
+                <button class="toggle-btn" onclick="switchToSignup()">Sign Up</button>
+            </div>
+            
+            <div id="messageContainer"></div>
+            
+            <div class="form-container">
+                <!-- Login Form -->
+                <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label">
+                            
+                            Email Address
+                        </label>
+                        <input type="email" class="form-input" placeholder="Enter your email" value="demo@traffinity.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            
+                            Password
+                        </label>
+                        <div class="password-container">
+                            <input type="password" class="form-input" placeholder="Enter your password" value="demo123" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword(this)">
+                                
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">Sign In</span>
+                        <div class="loading" style="display: none;"></div>
+                    </button>
+                    
+                    <div class="forgot-link">
+                        <a href="#" onclick="showForgotPassword()">Forgot your password?</a>
+                    </div>
+                </form>
+                
+                <!-- Signup Form -->
+                <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label class="form-label">
+                            
+                            Full Name
+                        </label>
+                        <input type="text" class="form-input" placeholder="Enter your full name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            
+                            Email Address
+                        </label>
+                        <input type="email" class="form-input" placeholder="Enter your email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            
+                            Password
+                        </label>
+                        <div class="password-container">
+                            <input type="password" class="form-input" placeholder="Create a password" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword(this)">
+                                
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            
+                            Confirm Password
+                        </label>
+                        <div class="password-container">
+                            <input type="password" class="form-input" placeholder="Confirm your password" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword(this)">
+                                
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">Create Account</span>
+                        <div class="loading" style="display: none;"></div>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="divider">
+                <span>or continue with</span>
+            </div>
+            
+            <div class="social-login">
+                <button class="social-btn" onclick="socialLogin('google')">
+                    
+                    <span>Google</span>
+                </button>
+                <button class="social-btn" onclick="socialLogin('github')">
+                    
+                    <span>GitHub</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    
+
+    <script>
+        // Icons removed
+        
+
+        let isLoginMode = true;
+        
+        function switchToLogin() {
+            if (isLoginMode) return;
+            
+            isLoginMode = true;
+            
+            // Update toggle buttons
+            const toggleBtns = document.querySelectorAll('.toggle-btn');
+            toggleBtns[0].classList.add('active');
+            toggleBtns[1].classList.remove('active');
+            
+            // Update header text
+            document.getElementById('authTitle').textContent = 'Welcome Back';
+            document.getElementById('authSubtitle').textContent = 'Sign in to access your traffic insights';
+            
+            // Switch forms
+            document.getElementById('loginForm').classList.add('active');
+            document.getElementById('signupForm').classList.remove('active');
+            
+            clearMessages();
+        }
+        
+        function switchToSignup() {
+            if (!isLoginMode) return;
+            
+            isLoginMode = false;
+            
+            // Update toggle buttons
+            const toggleBtns = document.querySelectorAll('.toggle-btn');
+            toggleBtns[0].classList.remove('active');
+            toggleBtns[1].classList.add('active');
+            
+            // Update header text
+            document.getElementById('authTitle').textContent = 'Create Account';
+            document.getElementById('authSubtitle').textContent = 'Join Traffinity for smarter traffic insights';
+            
+            // Switch forms
+            document.getElementById('loginForm').classList.remove('active');
+            document.getElementById('signupForm').classList.add('active');
+            
+            clearMessages();
+        }
+        
+        function togglePassword(button) {
+            const input = button.previousElementSibling;
+            const icon = button.querySelector('i');
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+            
+            icon.innerHTML = type === 'password' ? '👁️' : '🙈';
+            
+        }
+        
+        function showMessage(message, type = 'error') {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `${type}-message`;
+            
+            const icon = type === 'error' ? 'alert-circle' : 'check-circle';
+            messageDiv.innerHTML = `<span>${message}</span>`;
+            
+            container.innerHTML = '';
+            container.appendChild(messageDiv);
+            
+            
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 5000);
+            }
+        }
+        
+        function clearMessages() {
+            document.getElementById('messageContainer').innerHTML = '';
+        }
+        
+        function setButtonLoading(button, loading) {
+            const btnText = button.querySelector('.btn-text');
+            const loadingSpinner = button.querySelector('.loading');
+            
+            if (loading) {
+                button.disabled = true;
+                btnText.style.display = 'none';
+                loadingSpinner.style.display = 'inline-block';
+            } else {
+                button.disabled = false;
+                btnText.style.display = 'inline';
+                loadingSpinner.style.display = 'none';
+            }
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            const form = event.target;
+            const submitBtn = form.querySelector('.submit-btn');
+            
+            const email = form.querySelector('input[type="email"]').value;
+            const password = form.querySelector('input[type="password"]').value;
+            
+            if (!email || !password) {
+                showMessage('Please fill in all fields');
+                return;
+            }
+            
+            setButtonLoading(submitBtn, true);
+            clearMessages();
+            
+            // Demo login - any credentials work
+            try {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                showMessage('Login successful! Redirecting...', 'success');
+                
+                // Store demo auth state
+                sessionStorage.setItem('isAuthenticated', 'true');
+                sessionStorage.setItem('userEmail', email);
+                sessionStorage.setItem('userName', email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1));
+                
+                setTimeout(() => {
+                    window.location.href = '/home';
+                }, 1000);
+                
+            } catch (error) {
+                showMessage('Something went wrong. Please try again.');
+            } finally {
+                setButtonLoading(submitBtn, false);
+            }
+        }
+        
+        async function handleSignup(event) {
+            event.preventDefault();
+            const form = event.target;
+            const submitBtn = form.querySelector('.submit-btn');
+            
+            const inputs = form.querySelectorAll('.form-input');
+            const name = inputs[0].value.trim();
+            const email = inputs[1].value.trim();
+            const password = inputs[2].value;
+            const confirmPassword = inputs[3].value;
+            
+            if (!name || !email || !password || !confirmPassword) {
+                showMessage('Please fill in all fields');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showMessage('Passwords do not match');
+                return;
+            }
+            
+            if (password.length < 3) {
+                showMessage('Password must be at least 3 characters long');
+                return;
+            }
+            
+            setButtonLoading(submitBtn, true);
+            clearMessages();
+            
+            try {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                showMessage('Account created successfully! You can now sign in.', 'success');
+                
+                form.reset();
+                
+                setTimeout(() => {
+                    switchToLogin();
+                    const loginEmailInput = document.querySelector('#loginForm input[type="email"]');
+                    if (loginEmailInput) {
+                        loginEmailInput.value = email;
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                showMessage('Something went wrong. Please try again.');
+            } finally {
+                setButtonLoading(submitBtn, false);
+            }
+        }
+        
+        function socialLogin(provider) {
+            showMessage(`Signing in with ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`, 'success');
+            
+            setTimeout(() => {
+                sessionStorage.setItem('isAuthenticated', 'true');
+                sessionStorage.setItem('userEmail', `demo@${provider}.com`);
+                sessionStorage.setItem('userName', `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`);
+                
+                showMessage(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful!`, 'success');
+                
+                setTimeout(() => {
+                    window.location.href = '/home';
+                }, 1000);
+            }, 500);
+        }
+        
+        function showForgotPassword() {
+            const email = prompt('Enter your email address:');
+            if (email && email.trim()) {
+                showMessage('Demo: Password reset email sent!', 'success');
+            }
+        }
+    </script>
+</body>
+</html>
