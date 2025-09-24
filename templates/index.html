@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffinity - Smart Traffic Predictions</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input[type="text"], input[type="email"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin: 10px 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .result-card {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .result-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+        
+        .weather-card {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+        }
+        
+        .route-grid {
+            display: grid;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .route-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .route-item.best {
+            border-left-color: #00b894;
+            background: #e6fffa;
+        }
+        
+        .predictions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .prediction-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #ff7675;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #00b894;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .notification-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Notification Styles */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+        
+        .notification {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-left: 5px solid #667eea;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+            color: #333; /* Dark text for white background */
+        }
+        
+        .notification h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .notification p {
+            color: #555;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .notification.success {
+            border-left-color: #00b894;
+            background: #f0fff4; /* Light green background */
+        }
+        
+        .notification.success h4 {
+            color: #00684a;
+        }
+        
+        .notification.warning {
+            border-left-color: #fdcb6e;
+            background: #fffbf0; /* Light yellow background */
+        }
+        
+        .notification.warning h4 {
+            color: #b8860b;
+        }
+        
+        .notification.error {
+            border-left-color: #e17055;
+            background: #fff5f5; /* Light red background */
+        }
+        
+        .notification.error h4 {
+            color: #c53030;
+        }
+        
+        .notification .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+            font-weight: bold;
+        }
+        
+        .notification .close-btn:hover {
+            color: #333;
+        }
+        
+        .notification .timestamp {
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .monitoring-status {
+            background: #e6f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .monitoring-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-monitoring {
+            background-color: #00b894;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-stopped {
+            background-color: #e17055;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🚗 Traffinity</h1>
+            <p>Smart Traffic Predictions with Weather Impact & Route Optimization</p>
+        </div>
+        
+        <div class="content">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('predict')">🔮 Traffic Prediction</div>
+                <div class="tab" onclick="switchTab('monitor')">📱 Route Monitoring</div>
+            </div>
+            
+            <div id="predict-tab" class="tab-content active">
+                <div class="form-section">
+                    <h2>🗺️ Route Analysis</h2>
+                    <div class="form-group">
+                        <label for="origin">📍 Origin (e.g., "New York, NY" or "Times Square")</label>
+                        <input type="text" id="origin" placeholder="Enter starting location">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="destination">🎯 Destination</label>
+                        <input type="text" id="destination" placeholder="Enter destination">
+                    </div>
+                    
+                    <button class="btn" onclick="predictTraffic()">🚀 Analyze Traffic & Routes</button>
+                </div>
+            </div>
+            
+            <div id="monitor-tab" class="tab-content">
+                <div class="notification-section">
+                    <h2>📱 Real-time Route Monitoring</h2>
+                    <p>Get real-time pop-up alerts when traffic conditions change significantly on your route.</p>
+                    
+                    <div class="form-group">
+                        <label for="monitor-origin">📍 Origin</label>
+                        <input type="text" id="monitor-origin" placeholder="Enter starting location">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="monitor-destination">🎯 Destination</label>
+                        <input type="text" id="monitor-destination" placeholder="Enter destination">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="threshold">⏱️ Alert Threshold (minutes)</label>
+                        <input type="number" id="threshold" value="10" min="5" max="60" placeholder="10">
+                    </div>
+                    
+                    <div class="monitoring-controls">
+                        <button class="btn btn-secondary" onclick="startMonitoring()">🔔 Start Monitoring</button>
+                        <button class="btn" onclick="stopMonitoring()" id="stopBtn" style="display:none;">⏹️ Stop Monitoring</button>
+                    </div>
+                    
+                    <div id="monitoringStatus" class="monitoring-status" style="display:none;">
+                        <h4><span class="status-indicator status-stopped" id="statusIndicator"></span>Monitoring Status</h4>
+                        <p id="statusText">Not monitoring</p>
+                        <p id="lastCheck"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="results" class="results"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Define all functions first before any event listeners or DOM manipulation
+        
+        // Add the displayResults function at the top
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="result-card weather-card">
+                    <h3>🌤️ Weather Impact Analysis</h3>
+                    <p><strong>Current Conditions:</strong> ${data.weather_impact.conditions}</p>
+                    <p><strong>Temperature:</strong> ${data.weather_impact.temperature}</p>
+                    <p><strong>Traffic Impact:</strong> ${data.weather_impact.impact}</p>
+                    <p><strong>Wind Speed:</strong> ${data.weather_impact.wind_speed}</p>
+                    <p><strong>Visibility:</strong> ${data.weather_impact.visibility}</p>
+                    ${data.weather_impact.factors.length > 0 ? `<p><strong>Impact Factors:</strong> ${data.weather_impact.factors.join(', ')}</p>` : ''}
+                </div>
+                
+                <div class="result-card">
+                    <h3>🗺️ Route Options (Weather-Adjusted)</h3>
+                    <div class="route-grid">
+            `;
+            
+            data.route_options.forEach((route, index) => {
+                const isBest = index === 0;
+                html += `
+                    <div class="route-item ${isBest ? 'best' : ''}">
+                        <strong>${route.name}</strong> ${isBest ? '⭐ Recommended' : ''}<br>
+                        Duration: ${route.weather_adjusted_duration.toFixed(1)} min (${route.duration.toFixed(1)} min without weather)<br>
+                        Distance: ${route.distance.toFixed(1)} km<br>
+                        Traffic Delay: ${route.traffic_delay.toFixed(1)} min
+                        ${route.fuel_consumption ? `<br>Fuel: ${route.fuel_consumption.toFixed(2)}L` : ''}
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>⏰ Time-based Predictions</h3>
+                    <div class="predictions-grid">
+            `;
+            
+            data.predictions.forEach(pred => {
+                html += `
+                    <div class="prediction-item">
+                        <strong>${pred.time}</strong><br>
+                        Duration: ${pred.duration} min<br>
+                        Weather-adjusted: ${pred.weather_adjusted_duration} min<br>
+                        Distance: ${pred.distance} km
+                    </div>
+                `;
+            });
+            
+            if (data.best_time) {
+                html += `
+                    </div>
+                    <div style="margin-top: 20px; padding: 15px; background: #e6fffa; border-radius: 8px;">
+                        <strong>🎯 Best Departure Time:</strong> ${data.best_time.time} at ${data.best_time.departure_time}<br>
+                        <strong>Duration:</strong> ${data.best_time.weather_adjusted_duration} minutes (weather-adjusted)
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>🚨 Traffic Incidents</h3>
+                    <p>Total Incidents: ${data.incidents.total}</p>
+                    <p>Road Closures: ${data.incidents.closures}</p>
+                    <p>Roadworks: ${data.incidents.roadworks}</p>
+                </div>
+            `;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+        
+        async function predictTraffic() {
+            const origin = document.getElementById('origin').value.trim();
+            const destination = document.getElementById('destination').value.trim();
+            const resultsDiv = document.getElementById('results');
+            
+            if (!origin || !destination) {
+                resultsDiv.innerHTML = '<div class="error">❌ Please enter both origin and destination</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="loading">🔄 Analyzing traffic conditions, weather impact, and finding optimal routes...</div>';
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        origin: origin,
+                        destination: destination
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultsDiv.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                    return;
+                }
+                
+                // Call displayResults function
+                displayResults(data);
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                console.error('Error in predictTraffic:', error);
+            }
+        }
+        
+        // Notification functions
+        function showNotification(type, title, message, duration = 5000) {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            notification.innerHTML = `
+                <button class="close-btn" onclick="removeNotification(this)">&times;</button>
+                <h4>${title}</h4>
+                <p>${message}</p>
+                <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Auto-remove after duration
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    removeNotification(notification.querySelector('.close-btn'));
+                }
+            }, duration);
+        }
+        
+        function removeNotification(closeBtn) {
+            const notification = closeBtn.parentNode;
+            notification.style.animation = 'slideIn 0.3s ease-out reverse';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+        
+        function playNotificationSound() {
+            try {
+                // Simple beep sound using Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (error) {
+                console.log('Audio context not available:', error);
+            }
+        }
+        
+        // Monitoring functions
+        async function startMonitoring() {
+            const origin = document.getElementById('monitor-origin').value.trim();
+            const destination = document.getElementById('monitor-destination').value.trim();
+            const threshold = document.getElementById('threshold').value;
+            
+            if (!origin || !destination) {
+                showNotification('error', 'Error', 'Please fill in both origin and destination');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/start_monitoring', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        origin: origin,
+                        destination: destination,
+                        threshold: parseInt(threshold)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showNotification('error', 'Error', data.error);
+                    return;
+                }
+                
+                currentSessionId = data.session_id;
+                showNotification('success', 'Monitoring Started', `Route: ${data.origin} → ${data.destination}`);
+                
+                // Update UI
+                document.getElementById('stopBtn').style.display = 'inline-block';
+                document.getElementById('monitoringStatus').style.display = 'block';
+                document.getElementById('statusIndicator').className = 'status-indicator status-monitoring';
+                document.getElementById('statusText').textContent = `Monitoring route: ${data.origin} → ${data.destination}`;
+                
+                // Join monitoring session
+                if (socket && socket.connected) {
+                    socket.emit('join_monitoring', {session_id: currentSessionId});
+                }
+                
+            } catch (error) {
+                showNotification('error', 'Error', error.message);
+                console.error('Error in startMonitoring:', error);
+            }
+        }
+        
+        async function stopMonitoring() {
+            if (!currentSessionId) return;
+            
+            try {
+                const response = await fetch('/stop_monitoring', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: currentSessionId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('warning', 'Monitoring Stopped', 'Route monitoring has been stopped');
+                    resetMonitoringUI();
+                }
+                
+            } catch (error) {
+                showNotification('error', 'Error', error.message);
+                console.error('Error in stopMonitoring:', error);
+            }
+        }
+        
+        function updateMonitoringStatus(data) {
+            const lastCheckElement = document.getElementById('lastCheck');
+            if (lastCheckElement) {
+                lastCheckElement.innerHTML = `
+                    <strong>Last Check:</strong> ${data.timestamp}<br>
+                    <strong>Current Duration:</strong> ${data.duration} minutes<br>
+                    <strong>Checks Performed:</strong> ${data.check_count}
+                `;
+            }
+        }
+        
+        function resetMonitoringUI() {
+            currentSessionId = null;
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('statusIndicator').className = 'status-indicator status-stopped';
+            document.getElementById('statusText').textContent = 'Not monitoring';
+            document.getElementById('lastCheck').textContent = '';
+        }
+        
+        // Initialize Socket.IO connection and variables
+        let socket;
+        let currentSessionId = null;
+        
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Socket.IO connection
+            try {
+                socket = io();
+                
+                // Socket event listeners
+                socket.on('connect', function() {
+                    console.log('Connected to server');
+                    showNotification('success', 'Connected', 'Real-time monitoring service connected');
+                });
+                
+                socket.on('traffic_alert', function(data) {
+                    showNotification(data.type, data.title, `${data.message}<br><strong>Change:</strong> ${data.change}`, 8000);
+                    playNotificationSound();
+                });
+                
+                socket.on('monitoring_status', function(data) {
+                    if (data.session_id === currentSessionId) {
+                        updateMonitoringStatus(data);
+                    }
+                });
+                
+                socket.on('monitoring_error', function(data) {
+                    showNotification('error', 'Monitoring Error', data.error);
+                });
+                
+                socket.on('monitoring_stopped', function(data) {
+                    if (data.session_id === currentSessionId) {
+                        showNotification('warning', 'Monitoring Stopped', 'Route monitoring has been stopped');
+                        resetMonitoringUI();
+                    }
+                });
+                
+                socket.on('disconnect', function() {
+                    console.log('Disconnected from server');
+                    showNotification('warning', 'Disconnected', 'Lost connection to monitoring service');
+                });
+                
+            } catch (error) {
+                console.error('Socket.IO initialization error:', error);
+                showNotification('error', 'Connection Error', 'Failed to initialize real-time monitoring');
+            }
+            
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            
+            console.log('Traffinity app initialized successfully');
+        });
+    </script>
+</body>
+</html>
