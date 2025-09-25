@@ -135,6 +135,85 @@
             color: rgba(224, 224, 224, 0.8);
         }
         
+        .route-card {
+            background: rgba(60, 60, 60, 0.6);
+            border-radius: 12px;
+            padding: 25px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .route-point {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .route-icon {
+            font-size: 1.2em;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .route-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+            flex: 1;
+        }
+        
+        .route-label {
+            font-size: 0.8em;
+            color: var(--tech-gray);
+            font-weight: 500;
+            text-transform: uppercase;
+            text-align: center;
+        }
+        
+        .route-location {
+            font-size: 1em;
+            color: rgba(224, 224, 224, 0.9);
+            font-weight: 600;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .route-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            flex-shrink: 0;
+            padding: 0 10px;
+        }
+        
+        .arrow-line {
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--traffic-red), var(--signal-yellow));
+            border-radius: 2px;
+        }
+        
+        .arrow-head {
+            color: var(--signal-yellow);
+            font-size: 1.4em;
+            margin-top: -2px;
+        }
+        
         .analyze-btn {
             background: var(--signal-yellow);
             color: var(--charcoal-black);
@@ -146,6 +225,9 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-bottom: 30px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .analyze-btn:hover {
@@ -589,7 +671,28 @@
             const destination = sessionStorage.getItem('destination');
             
             if (origin && destination) {
-                let routeDisplayHTML = `<strong>From:</strong> ${origin}<br><strong>To:</strong> ${destination}`;
+                let routeDisplayHTML = `
+                    <div class="route-card">
+                        <div class="route-point from-point">
+                            <div class="route-icon">🔴</div>
+                            <div class="route-details">
+                                <span class="route-label">From</span>
+                                <span class="route-location">${origin}</span>
+                            </div>
+                        </div>
+                        <div class="route-arrow">
+                            <div class="arrow-line"></div>
+                            <div class="arrow-head">➤</div>
+                        </div>
+                        <div class="route-point to-point">
+                            <div class="route-icon">🟢</div>
+                            <div class="route-details">
+                                <span class="route-label">To</span>
+                                <span class="route-location">${destination}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 
                 // Update route display
                 document.getElementById('routeDisplay').innerHTML = routeDisplayHTML;
