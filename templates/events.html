@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events Dashboard - Traffinity</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --charcoal-black: #1C1C1C;
+            --traffic-red: #D7263D;
+            --signal-yellow: #FFD23F;
+            --green-light: #21BF73;
+            --tech-gray: #E0E0E0;
+            --glass-bg: rgba(224, 224, 224, 0.05);
+            --glass-border: rgba(224, 224, 224, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--charcoal-black);
+            color: var(--tech-gray);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(28, 28, 28, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--glass-border);
+            box-sizing: border-box;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+            min-height: 60px;
+            flex-wrap: nowrap;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--signal-yellow);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+            margin: 0;
+            padding: 0;
+            flex-shrink: 1;
+            flex-wrap: nowrap;
+            overflow: hidden;
+        }
+
+        .nav-links li {
+            flex-shrink: 0;
+        }
+
+        .nav-links a {
+            color: var(--tech-gray);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            white-space: nowrap;
+            display: block;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--signal-yellow);
+            background: var(--glass-bg);
+        }
+
+        .nav-auth {
+            display: flex;
+            gap: 1rem;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        .btn-outline {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--signal-yellow);
+            background: transparent;
+            color: var(--signal-yellow);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-outline:hover {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+        }
+
+        /* Event Notifier Card */
+        .event-notifier-section {
+            padding: 6rem 2rem 2rem;
+            margin: 0 auto;
+            max-width: 1200px;
+        }
+
+        .event-notifier-card {
+            background: linear-gradient(135deg, rgba(255, 210, 63, 0.1), rgba(215, 38, 61, 0.1));
+            border: 1px solid rgba(255, 210, 63, 0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .event-notifier-card:hover {
+            border-color: var(--signal-yellow);
+            box-shadow: 0 20px 40px rgba(255, 210, 63, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .event-notifier-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255, 210, 63, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .event-notifier-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .event-notifier-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--signal-yellow);
+        }
+
+        .event-notifier-title .icon {
+            font-size: 2rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .event-live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--traffic-red);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .event-live-indicator .dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% {
+                opacity: 1;
+            }
+            51%, 100% {
+                opacity: 0.3;
+            }
+        }
+
+        .event-notifier-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .event-current {
+            background: rgba(28, 28, 28, 0.6);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .event-current-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: var(--tech-gray);
+        }
+
+        .event-current-title {
+            font-size: 1.1rem;
+            color: var(--signal-yellow);
+            margin-bottom: 0.5rem;
+        }
+
+        .event-current-venue {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-current-impact {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .impact-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .impact-badge.high {
+            background: rgba(215, 38, 61, 0.2);
+            color: var(--traffic-red);
+        }
+
+        .impact-badge.medium {
+            background: rgba(255, 210, 63, 0.2);
+            color: var(--signal-yellow);
+        }
+
+        .impact-badge.low {
+            background: rgba(33, 191, 115, 0.2);
+            color: var(--green-light);
+        }
+
+        .event-stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .event-stat {
+            flex: 1;
+        }
+
+        .event-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--signal-yellow);
+            display: block;
+        }
+
+        .event-stat-label {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .event-notifier-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-event {
+            padding: 0.75rem 1.5rem;
+            background: var(--glass-bg);
+            color: var(--tech-gray);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-event:hover {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            border-color: var(--signal-yellow);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 210, 63, 0.3);
+        }
+
+        .btn-event.primary {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            border-color: var(--signal-yellow);
+        }
+
+        .btn-event.primary:hover {
+            background: var(--traffic-red);
+            color: white;
+            border-color: var(--traffic-red);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .nav-links {
+                gap: 1rem;
+            }
+            
+            .nav-links a {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .nav-container {
+                padding: 0 1rem;
+                justify-content: space-between;
+            }
+
+            .logo {
+                font-size: 1.3rem;
+            }
+
+            .event-notifier-section {
+                padding: 4rem 1rem 2rem;
+            }
+
+            .event-notifier-card {
+                padding: 1.5rem;
+            }
+
+            .event-notifier-content {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .event-notifier-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .event-notifier-title {
+                font-size: 1.3rem;
+            }
+
+            .event-notifier-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-event {
+                width: 100%;
+                justify-content: center;
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-container {
+                padding: 0 0.5rem;
+            }
+
+            .logo {
+                font-size: 1.2rem;
+                gap: 0.3rem;
+            }
+
+            .btn-outline {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/home" class="logo">
+                🚦 Traffinity
+            </a>
+            <ul class="nav-links">
+                <li><a href="/home">Home</a></li>
+                <li><a href="/prediction">Predictions</a></li>
+                <li><a href="/route-risk-analysis">Risk Analysis</a></li>
+                <li><a href="/monitoring">Monitoring</a></li>
+                <li><a href="/events" class="active">Events</a></li>
+                <li><a href="/heatmap">Heatmap</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="nav-auth">
+                <a href="/auth" class="btn-outline">
+                    👤 Account
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Event Notifier Section -->
+    <section class="event-notifier-section">
+        <div class="event-notifier-card" id="eventNotifierCard">
+            <div class="event-notifier-header">
+                <div class="event-notifier-title">
+                    <span class="icon">🎪</span>
+                    <span>Live Events Affecting Traffic</span>
+                </div>
+                <div class="event-live-indicator">
+                    <span class="dot"></span>
+                    <span>Live</span>
+                </div>
+            </div>
+
+            <div class="event-notifier-content">
+                <div class="event-current">
+                    <div class="event-current-header">
+                        🏏 Currently Active Event
+                    </div>
+                    <div class="event-current-title" id="currentEventTitle">
+                        India vs Australia Cricket Match
+                    </div>
+                    <div class="event-current-venue" id="currentEventVenue">
+                        📍 M. Chinnaswamy Stadium, Bengaluru
+                    </div>
+                    <div class="event-current-impact">
+                        🚦 Traffic Impact: 
+                        <span class="impact-badge high" id="currentEventImpact">High</span>
+                    </div>
+                </div>
+
+                <div class="event-stats">
+                    <div class="event-stat">
+                        <span class="event-stat-value" id="eventsCount">3</span>
+                        <span class="event-stat-label">Active Events</span>
+                    </div>
+                    <div class="event-stat">
+                        <span class="event-stat-value" id="avgDelay">+25</span>
+                        <span class="event-stat-label">Avg Delay (min)</span>
+                    </div>
+                    <div class="event-stat">
+                        <span class="event-stat-value" id="affectedRoads">12</span>
+                        <span class="event-stat-label">Affected Roads</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="event-notifier-actions">
+                <a href="/home" class="btn-event primary">
+                    🏠 Back to Home
+                </a>
+                <a href="/prediction" class="btn-event">
+                    🚗 Check Route Impact
+                </a>
+                <a href="/monitoring" class="btn-event">
+                    📊 Live Monitoring
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Event Notifier Management
+        class EventNotifier {
+            constructor() {
+                this.currentEventIndex = 0;
+                this.events = [
+                    {
+                        title: "India vs Australia Cricket Match",
+                        venue: "M. Chinnaswamy Stadium, Bengaluru",
+                        icon: "🏏",
+                        impact: "high",
+                        delay: 35,
+                        endTime: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
+                        activeEvents: 3,
+                        affectedRoads: 12
+                    },
+                    {
+                        title: "Tech Conference 2024",
+                        venue: "Bangalore International Exhibition Centre",
+                        icon: "💻",
+                        impact: "medium",
+                        delay: 18,
+                        endTime: new Date(Date.now() + 6 * 60 * 60 * 1000), // 6 hours from now
+                        activeEvents: 3,
+                        affectedRoads: 8
+                    },
+                    {
+                        title: "Music Festival",
+                        venue: "DLF Cyber Hub, Gurugram",
+                        icon: "🎵",
+                        impact: "medium",
+                        delay: 22,
+                        endTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+                        activeEvents: 3,
+                        affectedRoads: 10
+                    }
+                ];
+                
+                this.init();
+            }
+            
+            init() {
+                this.updateEventDisplay();
+                this.startRotation();
+            }
+            
+            updateEventDisplay() {
+                const event = this.events[this.currentEventIndex];
+                const titleElement = document.getElementById('currentEventTitle');
+                const venueElement = document.getElementById('currentEventVenue');
+                const impactElement = document.getElementById('currentEventImpact');
+                const eventsCountElement = document.getElementById('eventsCount');
+                const avgDelayElement = document.getElementById('avgDelay');
+                const affectedRoadsElement = document.getElementById('affectedRoads');
+                
+                if (titleElement) {
+                    titleElement.innerHTML = `${event.icon} ${event.title}`;
+                }
+                
+                if (venueElement) {
+                    venueElement.innerHTML = `📍 ${event.venue}`;
+                }
+                
+                if (impactElement) {
+                    impactElement.className = `impact-badge ${event.impact}`;
+                    impactElement.textContent = event.impact.charAt(0).toUpperCase() + event.impact.slice(1);
+                }
+                
+                if (eventsCountElement) {
+                    eventsCountElement.textContent = event.activeEvents;
+                }
+                
+                if (avgDelayElement) {
+                    avgDelayElement.textContent = `+${event.delay}`;
+                }
+                
+                if (affectedRoadsElement) {
+                    affectedRoadsElement.textContent = event.affectedRoads;
+                }
+                
+                // Add subtle animation when updating
+                const card = document.getElementById('eventNotifierCard');
+                if (card) {
+                    card.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        card.style.transform = 'scale(1)';
+                    }, 150);
+                }
+            }
+            
+            startRotation() {
+                // Rotate through events every 8 seconds
+                setInterval(() => {
+                    this.currentEventIndex = (this.currentEventIndex + 1) % this.events.length;
+                    this.updateEventDisplay();
+                }, 8000);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            new EventNotifier();
+        });
+    </script>
+</body>
+</html>

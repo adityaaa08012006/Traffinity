@@ -1592,6 +1592,11 @@ def route_risk_analysis():
     """Serve the route risk analysis page"""
     return render_template('rr_analysis.html')
 
+@app.route('/events')
+def events():
+    """Serve the events page"""
+    return render_template('events.html')
+
 @app.route('/analyze_route', methods=['POST'])
 def analyze_route():
     """Handle route risk analysis form submission with enhanced risk assessment"""
@@ -1661,6 +1666,379 @@ def get_route_details():
         
     except Exception as e:
         print(f"Route details error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# Events Data and Functions
+def get_hardcoded_events_data():
+    """Get hardcoded events data for demonstration"""
+    from datetime import datetime, timedelta
+    
+    now = datetime.now()
+    
+    events_data = [
+        {
+            "id": 1,
+            "title": "India vs Australia Cricket Match",
+            "type": "cricket",
+            "icon": "🏏",
+            "venue": "M. Chinnaswamy Stadium",
+            "location": {
+                "lat": 12.9787,
+                "lon": 77.5993,
+                "address": "Bengaluru, Karnataka, India"
+            },
+            "start_time": now - timedelta(hours=2),  # Started 2 hours ago
+            "end_time": now + timedelta(hours=4),    # Ends in 4 hours
+            "status": "live",
+            "attendance": 40000,
+            "traffic_impact": {
+                "level": "high",
+                "description": "Major traffic congestion around stadium area. Expect 30-45 minute delays on nearby routes.",
+                "radius": 5,  # km
+                "delay_minutes": 35,
+                "affected_roads": ["MG Road", "Brigade Road", "Cubbon Road"]
+            }
+        },
+        {
+            "id": 2,
+            "title": "IPL Final Match",
+            "type": "cricket",
+            "icon": "🏆",
+            "venue": "Wankhede Stadium",
+            "location": {
+                "lat": 19.0447,
+                "lon": 72.8419,
+                "address": "Mumbai, Maharashtra, India"
+            },
+            "start_time": now + timedelta(hours=3),  # Starts in 3 hours
+            "end_time": now + timedelta(hours=8),    # Ends in 8 hours
+            "status": "upcoming",
+            "attendance": 45000,
+            "traffic_impact": {
+                "level": "high",
+                "description": "Severe traffic expected before and after match. Use public transport recommended.",
+                "radius": 8,  # km
+                "delay_minutes": 50,
+                "affected_roads": ["Marine Drive", "Worli Sea Link", "Western Express Highway"]
+            }
+        },
+        {
+            "id": 3,
+            "title": "Tech Conference 2024",
+            "type": "conference",
+            "icon": "💻",
+            "venue": "Bangalore International Exhibition Centre",
+            "location": {
+                "lat": 13.1986,
+                "lon": 77.7066,
+                "address": "Bengaluru, Karnataka, India"
+            },
+            "start_time": now - timedelta(hours=1),  # Started 1 hour ago
+            "end_time": now + timedelta(hours=6),    # Ends in 6 hours
+            "status": "live",
+            "attendance": 15000,
+            "traffic_impact": {
+                "level": "medium",
+                "description": "Moderate traffic congestion. Additional 15-20 minutes travel time expected.",
+                "radius": 3,  # km
+                "delay_minutes": 18,
+                "affected_roads": ["Tumkur Road", "Hebbal Flyover"]
+            }
+        },
+        {
+            "id": 4,
+            "title": "Music Festival",
+            "type": "music",
+            "icon": "🎵",
+            "venue": "DLF Cyber Hub",
+            "location": {
+                "lat": 28.4953,
+                "lon": 77.0890,
+                "address": "Gurugram, Haryana, India"
+            },
+            "start_time": now - timedelta(hours=3),  # Started 3 hours ago
+            "end_time": now + timedelta(hours=2),    # Ends in 2 hours
+            "status": "live",
+            "attendance": 25000,
+            "traffic_impact": {
+                "level": "medium",
+                "description": "Increased traffic volume in Cyber City area. Alternative routes recommended.",
+                "radius": 4,  # km
+                "delay_minutes": 22,
+                "affected_roads": ["Golf Course Road", "Sohna Road", "NH-48"]
+            }
+        },
+        {
+            "id": 5,
+            "title": "Food & Wine Festival",
+            "type": "festival",
+            "icon": "🍷",
+            "venue": "Jawaharlal Nehru Stadium",
+            "location": {
+                "lat": 28.5906,
+                "lon": 77.2335,
+                "address": "New Delhi, India"
+            },
+            "start_time": now + timedelta(hours=1),  # Starts in 1 hour
+            "end_time": now + timedelta(hours=9),    # Ends in 9 hours
+            "status": "upcoming",
+            "attendance": 12000,
+            "traffic_impact": {
+                "level": "low",
+                "description": "Minor traffic impact expected. 5-10 minutes additional travel time.",
+                "radius": 2,  # km
+                "delay_minutes": 8,
+                "affected_roads": ["Lodhi Road", "India Gate Circle"]
+            }
+        },
+        {
+            "id": 6,
+            "title": "Marathon Championship",
+            "type": "sports",
+            "icon": "🏃‍♂️",
+            "venue": "Marine Drive to Gateway of India",
+            "location": {
+                "lat": 18.9220,
+                "lon": 72.8347,
+                "address": "Mumbai, Maharashtra, India"
+            },
+            "start_time": now - timedelta(minutes=30),  # Started 30 minutes ago
+            "end_time": now + timedelta(hours=3, minutes=30),  # Ends in 3.5 hours
+            "status": "live",
+            "attendance": 8000,
+            "traffic_impact": {
+                "level": "high",
+                "description": "Road closures along marathon route. Several key roads blocked until event ends.",
+                "radius": 6,  # km
+                "delay_minutes": 40,
+                "affected_roads": ["Marine Drive", "Nariman Point", "Fort Area"]
+            }
+        }
+    ]
+    
+    return events_data
+
+def calculate_distance_between_points(lat1, lon1, lat2, lon2):
+    """Calculate distance between two geographic points using Haversine formula"""
+    import math
+    
+    # Convert latitude and longitude from degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    
+    # Haversine formula
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    
+    # Earth's radius in kilometers
+    r = 6371
+    
+    return r * c
+
+def find_nearby_events(user_lat, user_lon, max_distance_km=50):
+    """Find events near the user's location"""
+    events = get_hardcoded_events_data()
+    nearby_events = []
+    
+    for event in events:
+        event_lat = event['location']['lat']
+        event_lon = event['location']['lon']
+        
+        # Calculate distance
+        distance = calculate_distance_between_points(user_lat, user_lon, event_lat, event_lon)
+        
+        if distance <= max_distance_km:
+            event_copy = event.copy()
+            event_copy['distance'] = distance
+            nearby_events.append(event_copy)
+    
+    # Sort by distance
+    nearby_events.sort(key=lambda x: x['distance'])
+    
+    return nearby_events
+
+def analyze_event_traffic_impact(event, user_location=None):
+    """Analyze how an event impacts traffic"""
+    impact = event['traffic_impact']
+    
+    analysis = {
+        "event_id": event['id'],
+        "event_title": event['title'],
+        "impact_level": impact['level'],
+        "base_delay": impact['delay_minutes'],
+        "affected_radius": impact['radius'],
+        "affected_roads": impact['affected_roads'],
+        "description": impact['description']
+    }
+    
+    # Calculate time-based impact multipliers
+    now = datetime.now()
+    
+    if event['status'] == 'live':
+        # Event is ongoing
+        time_factor = 1.0
+        
+        # Check if it's close to ending (less than 1 hour remaining)
+        time_until_end = (event['end_time'] - now).total_seconds() / 3600
+        if time_until_end < 1:
+            time_factor = 0.7  # Traffic starts to ease
+        
+        analysis['current_delay'] = round(impact['delay_minutes'] * time_factor)
+        analysis['traffic_status'] = "Active Impact"
+        
+    elif event['status'] == 'upcoming':
+        # Event hasn't started yet
+        time_until_start = (event['start_time'] - now).total_seconds() / 3600
+        
+        if time_until_start < 2:
+            # Traffic building up before event
+            time_factor = 0.5 + (2 - time_until_start) / 4  # Gradual increase
+            analysis['current_delay'] = round(impact['delay_minutes'] * time_factor)
+            analysis['traffic_status'] = "Building Up"
+        else:
+            analysis['current_delay'] = 0
+            analysis['traffic_status'] = "No Impact Yet"
+    
+    # Calculate when traffic will normalize (1 hour after event ends)
+    traffic_normal_time = event['end_time'] + timedelta(hours=1)
+    analysis['traffic_normal_time'] = traffic_normal_time.isoformat()
+    
+    # Add distance-based impact if user location is provided
+    if user_location and 'distance' in event:
+        distance = event['distance']
+        
+        # Reduce impact based on distance from event
+        if distance > impact['radius']:
+            analysis['distance_factor'] = 0.1  # Minimal impact outside radius
+        else:
+            analysis['distance_factor'] = 1 - (distance / impact['radius']) * 0.5
+        
+        analysis['adjusted_delay'] = round(analysis.get('current_delay', 0) * analysis['distance_factor'])
+    
+    return analysis
+
+@app.route('/api/events/nearby', methods=['POST'])
+def get_nearby_events():
+    """API endpoint to get events near a user's location"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        # Get user location
+        user_lat = data.get('lat')
+        user_lon = data.get('lon')
+        max_distance = data.get('max_distance', 50)  # Default 50km
+        
+        if not user_lat or not user_lon:
+            return jsonify({"error": "User location (lat, lon) required"}), 400
+        
+        try:
+            user_lat = float(user_lat)
+            user_lon = float(user_lon)
+            max_distance = float(max_distance)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid coordinates format"}), 400
+        
+        # Find nearby events
+        nearby_events = find_nearby_events(user_lat, user_lon, max_distance)
+        
+        # Add traffic impact analysis for each event
+        enriched_events = []
+        for event in nearby_events:
+            # Convert datetime objects to ISO strings for JSON serialization
+            event_data = {
+                "id": event['id'],
+                "title": event['title'],
+                "type": event['type'],
+                "icon": event['icon'],
+                "venue": event['venue'],
+                "location": event['location'],
+                "start_time": event['start_time'].isoformat(),
+                "end_time": event['end_time'].isoformat(),
+                "status": event['status'],
+                "attendance": event['attendance'],
+                "distance": round(event['distance'], 1),
+                "traffic_impact": event['traffic_impact']
+            }
+            
+            # Add traffic analysis
+            traffic_analysis = analyze_event_traffic_impact(event, {"lat": user_lat, "lon": user_lon})
+            event_data['traffic_analysis'] = traffic_analysis
+            
+            enriched_events.append(event_data)
+        
+        return jsonify({
+            "success": True,
+            "user_location": {"lat": user_lat, "lon": user_lon},
+            "events_found": len(enriched_events),
+            "events": enriched_events
+        })
+        
+    except Exception as e:
+        print(f"Error in get_nearby_events: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/events/<int:event_id>/impact')
+def get_event_traffic_impact(event_id):
+    """API endpoint to get detailed traffic impact for a specific event"""
+    try:
+        events = get_hardcoded_events_data()
+        event = next((e for e in events if e['id'] == event_id), None)
+        
+        if not event:
+            return jsonify({"error": "Event not found"}), 404
+        
+        # Get user location from query params if provided
+        user_lat = request.args.get('lat')
+        user_lon = request.args.get('lon')
+        
+        user_location = None
+        if user_lat and user_lon:
+            try:
+                user_location = {
+                    "lat": float(user_lat),
+                    "lon": float(user_lon)
+                }
+                # Calculate distance
+                event['distance'] = calculate_distance_between_points(
+                    user_location['lat'], user_location['lon'],
+                    event['location']['lat'], event['location']['lon']
+                )
+            except (ValueError, TypeError):
+                pass
+        
+        # Get detailed traffic impact analysis
+        impact_analysis = analyze_event_traffic_impact(event, user_location)
+        
+        # Add current traffic predictions for routes to/from event
+        if user_location:
+            # Get current traffic conditions from user location to event
+            try:
+                traffic_data = get_current_traffic(user_location['lat'], user_location['lon'])
+                if 'error' not in traffic_data:
+                    traffic_summary = format_traffic_analysis(traffic_data)
+                    impact_analysis['current_traffic_to_event'] = traffic_summary
+            except Exception as traffic_error:
+                print(f"Traffic data error: {traffic_error}")
+        
+        return jsonify({
+            "success": True,
+            "event": {
+                "id": event['id'],
+                "title": event['title'],
+                "venue": event['venue'],
+                "start_time": event['start_time'].isoformat(),
+                "end_time": event['end_time'].isoformat(),
+                "status": event['status']
+            },
+            "impact_analysis": impact_analysis
+        })
+        
+    except Exception as e:
+        print(f"Error in get_event_traffic_impact: {e}")
         return jsonify({"error": str(e)}), 500
 
 # Add the missing auth routes that were referenced in the templates
@@ -1788,6 +2166,304 @@ def verify_session():
             
     except Exception as e:
         return jsonify({"valid": False, "error": str(e)}), 500
+
+# Heatmap Routes
+@app.route('/heatmap')
+def heatmap():
+    """Serve the traffic heatmap page for Pune"""
+    return render_template('heatmap.html')
+
+def get_pune_major_locations():
+    """Get major Pune locations for traffic monitoring"""
+    return [
+        # City Center Areas
+        {"name": "Shivajinagar", "lat": 18.5309, "lon": 73.8475, "type": "commercial"},
+        {"name": "FC Road", "lat": 18.5167, "lon": 73.8362, "type": "commercial"},
+        {"name": "Camp Area", "lat": 18.5089, "lon": 73.8801, "type": "commercial"},
+        {"name": "Koregaon Park", "lat": 18.5370, "lon": 73.8958, "type": "residential"},
+        {"name": "Viman Nagar", "lat": 18.5679, "lon": 73.9143, "type": "residential"},
+        
+        # IT Corridor
+        {"name": "Hinjewadi Phase 1", "lat": 18.5913, "lon": 73.7389, "type": "it_park"},
+        {"name": "Hinjewadi Phase 2", "lat": 18.5985, "lon": 73.7297, "type": "it_park"},
+        {"name": "Hinjewadi Phase 3", "lat": 18.6050, "lon": 73.7200, "type": "it_park"},
+        {"name": "Baner", "lat": 18.5590, "lon": 73.7793, "type": "residential"},
+        {"name": "Aundh", "lat": 18.5593, "lon": 73.8073, "type": "residential"},
+        
+        # Major Junctions
+        {"name": "Swargate", "lat": 18.5018, "lon": 73.8636, "type": "junction"},
+        {"name": "Deccan Gymkhana", "lat": 18.5074, "lon": 73.8330, "type": "junction"},
+        {"name": "Pune Station", "lat": 18.5288, "lon": 73.8742, "type": "transport"},
+        {"name": "Hadapsar", "lat": 18.5089, "lon": 73.9260, "type": "residential"},
+        {"name": "Kothrud", "lat": 18.5074, "lon": 73.8077, "type": "residential"},
+        
+        # Highways & Major Roads
+        {"name": "Mumbai-Pune Expressway", "lat": 18.5488, "lon": 73.7780, "type": "highway"},
+        {"name": "Pune-Nashik Highway", "lat": 18.6298, "lon": 73.7997, "type": "highway"},
+        {"name": "Pune-Satara Road", "lat": 18.4574, "lon": 73.8324, "type": "highway"},
+        {"name": "Pune-Solapur Road", "lat": 18.5074, "lon": 73.9298, "type": "highway"},
+        
+        # Outer Areas
+        {"name": "Pimpri-Chinchwad", "lat": 18.6298, "lon": 73.7997, "type": "suburb"},
+        {"name": "Wakad", "lat": 18.5975, "lon": 73.7639, "type": "residential"},
+        {"name": "Warje", "lat": 18.4793, "lon": 73.8026, "type": "residential"},
+        {"name": "Magarpatta", "lat": 18.5167, "lon": 73.9299, "type": "it_park"},
+        {"name": "EON IT Park", "lat": 18.5593, "lon": 73.9114, "type": "it_park"}
+    ]
+
+def calculate_traffic_intensity_for_location(location, current_hour):
+    """Calculate realistic traffic intensity based on location type and time"""
+    base_intensity = 0.3
+    
+    if location["type"] == "it_park":
+        # IT parks busy during office hours
+        if 8 <= current_hour <= 10:  # Morning rush
+            base_intensity = 0.9
+        elif 17 <= current_hour <= 19:  # Evening rush
+            base_intensity = 0.8
+        elif 11 <= current_hour <= 16:  # Office hours
+            base_intensity = 0.5
+        else:  # Off hours
+            base_intensity = 0.2
+    elif location["type"] == "commercial":
+        # Commercial areas busy during day and evening
+        if 10 <= current_hour <= 22:
+            base_intensity = 0.7
+        else:
+            base_intensity = 0.3
+    elif location["type"] == "junction":
+        # Junctions always have some traffic
+        base_intensity = 0.6
+        if 8 <= current_hour <= 10 or 17 <= current_hour <= 19:
+            base_intensity = 0.9
+    elif location["type"] == "highway":
+        # Highways have consistent traffic with rush hour peaks
+        base_intensity = 0.5
+        if 7 <= current_hour <= 10 or 17 <= current_hour <= 20:
+            base_intensity = 0.8
+    elif location["type"] == "residential":
+        # Residential areas have moderate traffic during rush hours
+        base_intensity = 0.4
+        if 8 <= current_hour <= 10 or 17 <= current_hour <= 19:
+            base_intensity = 0.6
+    
+    # Add some randomness for realism
+    import random
+    variation = (random.random() - 0.5) * 0.3
+    intensity = max(0.1, min(1.0, base_intensity + variation))
+    
+    return intensity
+
+async def get_tomtom_traffic_data_for_pune():
+    """Fetch real traffic data from TomTom API for Pune locations"""
+    pune_locations = get_pune_major_locations()
+    traffic_data = []
+    
+    try:
+        for location in pune_locations:
+            # Get traffic flow data for this location
+            flow_data = get_current_traffic(location["lat"], location["lon"])
+            
+            if "error" not in flow_data and "flowSegmentData" in flow_data:
+                flow_segment = flow_data["flowSegmentData"]
+                current_speed = flow_segment.get("currentSpeed", 0)
+                free_flow_speed = flow_segment.get("freeFlowSpeed", 50)
+                
+                # Calculate traffic intensity (0-1) based on speed reduction
+                if free_flow_speed > 0:
+                    speed_ratio = current_speed / free_flow_speed
+                    # Invert so higher intensity = more congestion
+                    intensity = max(0.1, min(1.0, 1 - speed_ratio))
+                else:
+                    intensity = 0.5  # Default moderate traffic
+                
+                traffic_data.append({
+                    "name": location["name"],
+                    "lat": location["lat"],
+                    "lon": location["lon"],
+                    "type": location["type"],
+                    "intensity": intensity,
+                    "current_speed": current_speed,
+                    "free_flow_speed": free_flow_speed,
+                    "congestion_level": (1 - speed_ratio) * 100 if free_flow_speed > 0 else 50
+                })
+            else:
+                # Fallback to simulated data if API fails
+                current_hour = datetime.now().hour
+                intensity = calculate_traffic_intensity_for_location(location, current_hour)
+                
+                traffic_data.append({
+                    "name": location["name"],
+                    "lat": location["lat"],
+                    "lon": location["lon"],
+                    "type": location["type"],
+                    "intensity": intensity,
+                    "current_speed": int(50 * (1 - intensity)),
+                    "free_flow_speed": 50,
+                    "congestion_level": intensity * 100
+                })
+        
+        return traffic_data
+        
+    except Exception as e:
+        print(f"Error fetching TomTom traffic data: {e}")
+        # Return simulated data as fallback
+        return get_simulated_pune_traffic_data()
+
+def get_simulated_pune_traffic_data():
+    """Generate simulated traffic data for Pune locations"""
+    pune_locations = get_pune_major_locations()
+    current_hour = datetime.now().hour
+    traffic_data = []
+    
+    for location in pune_locations:
+        intensity = calculate_traffic_intensity_for_location(location, current_hour)
+        
+        traffic_data.append({
+            "name": location["name"],
+            "lat": location["lat"],
+            "lon": location["lon"],
+            "type": location["type"],
+            "intensity": intensity,
+            "current_speed": int(50 * (1 - intensity)),
+            "free_flow_speed": 50,
+            "congestion_level": intensity * 100
+        })
+    
+    return traffic_data
+
+@app.route('/api/heatmap/traffic_data')
+async def get_heatmap_traffic_data():
+    """API endpoint to get traffic data for heatmap visualization"""
+    try:
+        # Try to get real TomTom data first, fallback to simulated data
+        traffic_data = await get_tomtom_traffic_data_for_pune()
+        
+        # Calculate statistics
+        total_locations = len(traffic_data)
+        avg_speed = sum(location["current_speed"] for location in traffic_data) / total_locations if total_locations > 0 else 0
+        heavy_traffic_count = sum(1 for location in traffic_data if location["intensity"] > 0.7)
+        
+        # Generate heatmap points (multiple points per location for better visualization)
+        heatmap_points = []
+        for location in traffic_data:
+            # Add main point
+            heatmap_points.append([
+                location["lat"],
+                location["lon"],
+                location["intensity"]
+            ])
+            
+            # Add surrounding points for better heatmap effect
+            import random
+            for _ in range(3):
+                lat_offset = (random.random() - 0.5) * 0.005  # Small radius around location
+                lon_offset = (random.random() - 0.5) * 0.005
+                intensity_variation = location["intensity"] + (random.random() - 0.5) * 0.2
+                intensity_variation = max(0.1, min(1.0, intensity_variation))
+                
+                heatmap_points.append([
+                    location["lat"] + lat_offset,
+                    location["lon"] + lon_offset,
+                    intensity_variation
+                ])
+        
+        return jsonify({
+            "success": True,
+            "timestamp": datetime.now().isoformat(),
+            "statistics": {
+                "total_locations": total_locations,
+                "average_speed": round(avg_speed, 1),
+                "heavy_traffic_areas": heavy_traffic_count,
+                "data_source": "TomTom API + Simulation"
+            },
+            "locations": traffic_data,
+            "heatmap_points": heatmap_points
+        })
+        
+    except Exception as e:
+        print(f"Error in heatmap traffic data: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "fallback_data": get_simulated_pune_traffic_data()
+        }), 500
+
+@app.route('/api/heatmap/location/<location_name>')
+def get_location_traffic_detail(location_name):
+    """Get detailed traffic information for a specific location"""
+    try:
+        pune_locations = get_pune_major_locations()
+        location = next((loc for loc in pune_locations if loc["name"].lower() == location_name.lower()), None)
+        
+        if not location:
+            return jsonify({"error": "Location not found"}), 404
+        
+        # Get current traffic data
+        flow_data = get_current_traffic(location["lat"], location["lon"])
+        
+        if "error" not in flow_data and "flowSegmentData" in flow_data:
+            flow_segment = flow_data["flowSegmentData"]
+            current_speed = flow_segment.get("currentSpeed", 0)
+            free_flow_speed = flow_segment.get("freeFlowSpeed", 50)
+            road_closure = flow_segment.get("roadClosure", False)
+            
+            # Calculate metrics
+            congestion_level = ((free_flow_speed - current_speed) / free_flow_speed * 100) if free_flow_speed > 0 else 0
+            
+            # Determine traffic status
+            if road_closure:
+                status = "Road Closed"
+                status_color = "#8B0000"
+            elif congestion_level > 70:
+                status = "Severe Traffic"
+                status_color = "#D7263D"
+            elif congestion_level > 50:
+                status = "Heavy Traffic" 
+                status_color = "#FF8C00"
+            elif congestion_level > 25:
+                status = "Moderate Traffic"
+                status_color = "#FFD23F"
+            else:
+                status = "Free Flow"
+                status_color = "#21BF73"
+            
+            return jsonify({
+                "success": True,
+                "location": location,
+                "traffic_data": {
+                    "status": status,
+                    "status_color": status_color,
+                    "current_speed": current_speed,
+                    "free_flow_speed": free_flow_speed,
+                    "congestion_level": round(congestion_level, 1),
+                    "road_closure": road_closure,
+                    "estimated_delay": round(congestion_level * 0.3, 1)  # Rough delay estimation
+                },
+                "timestamp": datetime.now().isoformat()
+            })
+        else:
+            # Return simulated data if API fails
+            current_hour = datetime.now().hour
+            intensity = calculate_traffic_intensity_for_location(location, current_hour)
+            
+            return jsonify({
+                "success": True,
+                "location": location,
+                "traffic_data": {
+                    "status": "Simulated Data",
+                    "status_color": "#FFD23F",
+                    "current_speed": int(50 * (1 - intensity)),
+                    "free_flow_speed": 50,
+                    "congestion_level": round(intensity * 100, 1),
+                    "road_closure": False,
+                    "estimated_delay": round(intensity * 15, 1)
+                },
+                "timestamp": datetime.now().isoformat()
+            })
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/.well-known/appspecific/com.chrome.devtools.json')
 def chrome_devtools():

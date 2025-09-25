@@ -39,8 +39,9 @@
             background: rgba(28, 28, 28, 0.95);
             backdrop-filter: blur(20px);
             z-index: 1000;
-            padding: 1rem 0;
+            padding: 0.75rem 0;
             border-bottom: 1px solid var(--glass-border);
+            box-sizing: border-box;
         }
 
         .nav-container {
@@ -50,6 +51,8 @@
             justify-content: space-between;
             align-items: center;
             padding: 0 2rem;
+            min-height: 60px;
+            flex-wrap: nowrap;
         }
 
         .logo {
@@ -60,12 +63,23 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .nav-links {
             display: flex;
             list-style: none;
-            gap: 2rem;
+            gap: 1.5rem;
+            margin: 0;
+            padding: 0;
+            flex-shrink: 1;
+            flex-wrap: nowrap;
+            overflow: hidden;
+        }
+
+        .nav-links li {
+            flex-shrink: 0;
         }
 
         .nav-links a {
@@ -73,8 +87,10 @@
             text-decoration: none;
             font-weight: 500;
             transition: color 0.3s ease;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 0.75rem;
             border-radius: 8px;
+            white-space: nowrap;
+            display: block;
         }
 
         .nav-links a:hover {
@@ -85,6 +101,8 @@
         .nav-auth {
             display: flex;
             gap: 1rem;
+            flex-shrink: 0;
+            align-items: center;
         }
 
         .btn-outline {
@@ -484,9 +502,29 @@
         }
 
         /* Responsive Design */
+        @media (max-width: 1024px) {
+            .nav-links {
+                gap: 1rem;
+            }
+            
+            .nav-links a {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+        }
+
         @media (max-width: 768px) {
             .nav-links {
                 display: none;
+            }
+
+            .nav-container {
+                padding: 0 1rem;
+                justify-content: space-between;
+            }
+
+            .logo {
+                font-size: 1.3rem;
             }
 
             .hero h1 {
@@ -497,9 +535,21 @@
                 flex-direction: column;
                 align-items: center;
             }
+        }
 
+        @media (max-width: 480px) {
             .nav-container {
-                padding: 0 1rem;
+                padding: 0 0.5rem;
+            }
+
+            .logo {
+                font-size: 1.2rem;
+                gap: 0.3rem;
+            }
+
+            .btn-outline {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
             }
         }
 
@@ -551,7 +601,8 @@
                 <li><a href="/prediction">Predictions</a></li>
                 <li><a href="/route-risk-analysis">Risk Analysis</a></li>
                 <li><a href="/monitoring">Monitoring</a></li>
-                <li><a href="#about">About</a></li>
+                <li><a href="/events">Events</a></li>
+                <li><a href="/heatmap">Heatmap</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
             <div class="nav-auth">
@@ -571,11 +622,8 @@
                 <a href="#route-input" class="btn-primary">
                     🚀 Start Prediction
                 </a>
-                <a href="/route-risk-analysis" class="btn-primary">
-                    📊 Route Risk Analysis
-                </a>
-                <a href="#features" class="btn-secondary">
-                    ℹ️ Learn More
+                <a href="#features" class="btn-primary">
+                    � Why Choose Us
                 </a>
             </div>
         </div>
@@ -676,6 +724,22 @@
                     </div>
                     <h3>Route Risk Analysis</h3>
                     <p>Advanced Monte Carlo simulation for probabilistic route risk assessment and delay prediction.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        🎪
+                    </div>
+                    <h3>Event Traffic Impact</h3>
+                    <p>Real-time detection of nearby events and their impact on traffic patterns with live countdown timers.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        🌡️
+                    </div>
+                    <h3>Live Traffic Heatmap</h3>
+                    <p>Interactive real-time traffic density visualization across Pune with TomTom API integration and live monitoring.</p>
                 </div>
             </div>
         </div>
@@ -999,6 +1063,7 @@
 
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize autocomplete for both inputs
             // Initialize autocomplete for both inputs
             const originInput = document.getElementById('origin');
             const originDropdown = document.getElementById('origin-dropdown');
