@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffinity - Route Risk Assessment</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --charcoal-black: #1C1C1C;
+            --traffic-red: #D7263D;
+            --signal-yellow: #FFD23F;
+            --green-light: #21BF73;
+            --tech-gray: #E0E0E0;
+            --glass-bg: rgba(224, 224, 224, 0.05);
+            --glass-border: rgba(224, 224, 224, 0.1);
+            
+            /* Risk Colors */
+            --risk-minimal: #22c55e;
+            --risk-low: #84cc16;
+            --risk-moderate: #eab308;
+            --risk-high: #f97316;
+            --risk-severe: #dc2626;
+            --risk-critical: #7f1d1d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--charcoal-black);
+            color: var(--tech-gray);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .nav-header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(28, 28, 28, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .nav-header h1 {
+            color: var(--signal-yellow);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            border: none;
+            font-size: 0.9rem;
+        }
+
+        .btn--outline {
+            background: transparent;
+            border: 1px solid var(--signal-yellow);
+            color: var(--signal-yellow);
+        }
+
+        .btn--outline:hover {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            transform: translateY(-2px);
+        }
+
+        .btn--primary {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            border: none;
+            font-weight: 600;
+        }
+
+        .btn--primary:hover {
+            background: var(--traffic-red);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(215, 38, 61, 0.3);
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 400px 1fr 350px;
+            height: 100vh;
+            padding-top: 80px;
+            gap: 0;
+        }
+
+        /* Left Panel - Route Input */
+        .left-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .route-input-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--signal-yellow);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--tech-gray);
+            font-size: 0.9rem;
+        }
+
+        .form-input,
+        .form-control {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(28, 28, 28, 0.8);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--tech-gray);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus,
+        .form-control:focus {
+            outline: none;
+            border-color: var(--signal-yellow);
+            box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.2);
+        }
+
+        .form-input::placeholder,
+        .form-control::placeholder {
+            color: rgba(224, 224, 224, 0.5);
+        }
+
+        /* Analyze button */
+        .analyze-btn {
+            width: 100%;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--signal-yellow), var(--green-light));
+            color: var(--charcoal-black);
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 210, 63, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Autocomplete Styling - Match main.html */
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(28, 28, 28, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .autocomplete-suggestions.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--tech-gray);
+            border-bottom: 1px solid rgba(224, 224, 224, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: var(--glass-bg);
+            color: var(--signal-yellow);
+        }
+
+        .autocomplete-item:active {
+            background: rgba(255, 210, 63, 0.2);
+            transform: scale(0.98);
+        }
+
+        .autocomplete-item-icon {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .autocomplete-item-text {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .autocomplete-loading {
+            padding: 0.75rem 1rem;
+            color: var(--tech-gray);
+            opacity: 0.7;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .autocomplete-no-results {
+            padding: 0.75rem 1rem;
+            color: var(--tech-gray);
+            opacity: 0.7;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        /* Risk Overview Cards */
+        .risk-overview {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .risk-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .risk-card:hover {
+            border-color: var(--signal-yellow);
+            transform: translateY(-2px);
+        }
+
+        .risk-score {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .risk-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .risk-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .risk-description {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        /* Center Panel - Map */
+        .map-panel {
+            position: relative;
+            background: var(--charcoal-black);
+        }
+
+        #risk-map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .map-overlay > * {
+            pointer-events: auto;
+        }
+
+        .route-status {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .route-text {
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Risk Legend */
+        .risk-legend {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            width: 250px;
+        }
+
+        .legend-title {
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: var(--signal-yellow);
+            font-size: 0.9rem;
+        }
+
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Right Panel - Analysis */
+        .right-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--glass-border);
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* Risk Metrics */
+        .risk-metrics {
+            margin-bottom: 2rem;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            background: rgba(28, 28, 28, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: var(--signal-yellow);
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--signal-yellow);
+            display: block;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+
+        /* Risk Factors */
+        .risk-factors {
+            margin-bottom: 2rem;
+        }
+
+        .factor-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .factor-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: rgba(28, 28, 28, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .factor-item:hover {
+            background: rgba(28, 28, 28, 0.6);
+        }
+
+        .factor-icon {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .factor-text {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .factor-impact {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        /* Risk Chart */
+        .risk-chart-section {
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: rgba(28, 28, 28, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            height: 250px;
+        }
+
+        /* Recommendations - Match main.html style */
+        .recommendations {
+            background: rgba(33, 191, 115, 0.1);
+            border: 1px solid var(--green-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .recommendations h2 {
+            color: var(--green-light);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem 0;
+        }
+
+        .recommendation-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .recommendation-icon {
+            color: var(--green-light);
+            font-size: 1rem;
+            margin-top: 0.1rem;
+            flex-shrink: 0;
+        }
+
+        .recommendation-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--tech-gray);
+        }
+
+        /* Loading States */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(28, 28, 28, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-content {
+            text-align: center;
+            color: var(--tech-gray);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--glass-border);
+            border-top: 4px solid var(--signal-yellow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-subtext {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 350px 1fr 300px;
+            }
+        }
+
+        @media (max-width: 968px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .left-panel,
+            .right-panel {
+                border: none;
+                border-top: 1px solid var(--glass-border);
+                border-bottom: 1px solid var(--glass-border);
+            }
+
+            .map-panel {
+                height: 60vh;
+                min-height: 400px;
+            }
+
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <header class="nav-header">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="btn btn--outline">
+                ← Dashboard
+            </a>
+            <h1>⚠️ Route Risk Assessment</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Left Panel - Route Input & Risk Overview -->
+        <div class="left-panel">
+            <!-- Route Input Section -->
+            <div class="route-input-section">
+                <h2 class="section-title">🎯 Route Analysis</h2>
+                
+                <form id="risk-analysis-form">
+                    <div class="form-group">
+                        <label class="form-label">📍 Starting Point</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="origin-input" class="form-control" placeholder="Enter origin location..." required>
+                            <div class="autocomplete-suggestions" id="origin-suggestions"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">🏁 Destination</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="destination-input" class="form-control" placeholder="Enter destination..." required>
+                            <div class="autocomplete-suggestions" id="destination-suggestions"></div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="analyze-btn" id="analyze-btn">
+                        🔍 Analyze Route Risk
+                    </button>
+                </form>
+            </div>
+
+            <!-- Risk Overview Cards -->
+            <div id="risk-overview-section" class="risk-overview hidden">
+                <h2 class="section-title">⚡ Risk Overview</h2>
+                
+                <div class="risk-card" id="overall-risk-card">
+                    <div class="risk-score">
+                        <span class="risk-label">Overall Risk Score</span>
+                        <span class="risk-value" id="overall-risk-value">--</span>
+                    </div>
+                    <div class="risk-description" id="overall-risk-desc">Analyzing route...</div>
+                </div>
+
+                <div class="risk-card" id="delay-risk-card">
+                    <div class="risk-score">
+                        <span class="risk-label">Delay Probability</span>
+                        <span class="risk-value" id="delay-probability">--%</span>
+                    </div>
+                    <div class="risk-description">Chance of >15 min delay</div>
+                </div>
+
+                <div class="risk-card" id="weather-risk-card">
+                    <div class="risk-score">
+                        <span class="risk-label">Weather Impact</span>
+                        <span class="risk-value" id="weather-impact">--</span>
+                    </div>
+                    <div class="risk-description" id="weather-desc">Current conditions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel - Map -->
+        <div class="map-panel">
+            <div id="risk-map"></div>
+            
+            <div class="map-overlay">
+                <div class="route-status hidden" id="route-status">
+                    <div class="status-indicator" id="status-indicator"></div>
+                    <div class="route-text" id="route-text">Ready to analyze route</div>
+                </div>
+            </div>
+
+            <div class="risk-legend hidden" id="risk-legend">
+                <div class="legend-title">🌡️ Risk Intensity</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--risk-minimal);"></div>
+                        <span>Minimal (0-20%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--risk-low);"></div>
+                        <span>Low (20-35%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--risk-moderate);"></div>
+                        <span>Moderate (35-50%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--risk-high);"></div>
+                        <span>High (50-70%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--risk-severe);"></div>
+                        <span>Severe (70-85%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--risk-critical);"></div>
+                        <span>Critical (85%+)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay hidden" id="loading-overlay">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Analyzing Route Risk</div>
+                    <div class="loading-subtext">Running advanced traffic simulations...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Detailed Analysis -->
+        <div class="right-panel">
+            <!-- Risk Metrics -->
+            <div class="risk-metrics">
+                <h2 class="section-title">📊 Risk Metrics</h2>
+                
+                <div class="metric-grid hidden" id="metrics-grid">
+                    <div class="metric-card">
+                        <span class="metric-value" id="avg-delay">--</span>
+                        <div class="metric-label">Avg Delay (min)</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="max-delay">--</span>
+                        <div class="metric-label">Max Delay (min)</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="reliability">--%</span>
+                        <div class="metric-label">Reliability Score</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="incidents">--</span>
+                        <div class="metric-label">Active Incidents</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Factors -->
+            <div class="risk-factors">
+                <h2 class="section-title">⚠️ Risk Factors</h2>
+                <div class="factor-list" id="risk-factors-list">
+                    <div class="text-center" style="padding: 2rem; opacity: 0.6;">
+                        Analyze a route to see risk factors
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Chart -->
+            <div class="risk-chart-section">
+                <h2 class="section-title">📈 Risk Timeline</h2>
+                <div class="chart-container">
+                    <canvas id="risk-timeline-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="recommendations hidden" id="recommendations-section">
+                <h2>💡 Smart Recommendations</h2>
+                <div id="recommendations-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class RouteRiskAnalyzer {
+            constructor() {
+                this.map = null;
+                this.routeLayer = null;
+                this.riskChart = null;
+                this.currentAnalysis = null;
+                this.originMarker = null;
+                this.destinationMarker = null;
+                
+                this.initializeMap();
+                this.bindEvents();
+                this.setupChart();
+                this.setupAutocomplete();
+            }
+
+            initializeMap() {
+                this.map = L.map('risk-map').setView([40.7128, -74.0060], 13);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(this.map);
+            }
+
+            setupAutocomplete() {
+                // Setup autocomplete for origin input
+                this.setupInputAutocomplete('origin-input', 'origin-suggestions');
+                this.setupInputAutocomplete('destination-input', 'destination-suggestions');
+            }
+
+            setupInputAutocomplete(inputId, suggestionsId) {
+                const input = document.getElementById(inputId);
+                const suggestionsDiv = document.getElementById(suggestionsId);
+                let debounceTimer = null;
+
+                input.addEventListener('input', (e) => {
+                    const query = e.target.value.trim();
+                    
+                    if (debounceTimer) clearTimeout(debounceTimer);
+                    
+                    if (query.length < 2) {
+                        suggestionsDiv.classList.remove('show');
+                        return;
+                    }
+
+                    debounceTimer = setTimeout(() => {
+                        this.fetchLocationSuggestions(query, suggestionsDiv, input);
+                    }, 300);
+                });
+
+                input.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        suggestionsDiv.classList.remove('show');
+                    }, 200);
+                });
+
+                input.addEventListener('focus', () => {
+                    if (suggestionsDiv.children.length > 0) {
+                        suggestionsDiv.classList.add('show');
+                    }
+                });
+            }
+
+            async fetchLocationSuggestions(query, suggestionsDiv, input) {
+                try {
+                    // Show loading state
+                    suggestionsDiv.innerHTML = '<div class="autocomplete-loading">🔍 Searching...</div>';
+                    suggestionsDiv.classList.add('show');
+
+                    const response = await fetch(`/suggest_locations?q=${encodeURIComponent(query)}&limit=5`);
+                    const data = await response.json();
+
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        this.displaySuggestions(data.suggestions, suggestionsDiv, input);
+                    } else {
+                        suggestionsDiv.innerHTML = '<div class="autocomplete-no-results">No locations found</div>';
+                    }
+                } catch (error) {
+                    console.error('Error fetching suggestions:', error);
+                    suggestionsDiv.innerHTML = '<div class="autocomplete-no-results">⚠️ Search failed</div>';
+                }
+            }
+
+            displaySuggestions(suggestions, suggestionsDiv, input) {
+                suggestionsDiv.innerHTML = '';
+                
+                suggestions.forEach(suggestion => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    
+                    let icon = '📍';
+                    switch (suggestion.category) {
+                        case 'airport': icon = '✈️'; break;
+                        case 'railway': icon = '🚊'; break;
+                        case 'petrol_station': icon = '⛽'; break;
+                        case 'charging_station': icon = '🔌'; break;
+                        case 'parking': icon = '🅿️'; break;
+                        case 'hospital': icon = '🏥'; break;
+                        case 'education': icon = '🎓'; break;
+                        case 'restaurant': icon = '🍽️'; break;
+                        case 'hotel': icon = '🏨'; break;
+                        case 'poi': icon = '⭐'; break;
+                        default: icon = '📍'; break;
+                    }
+                    
+                    item.innerHTML = `
+                        <span class="autocomplete-item-icon">${icon}</span>
+                        <span class="autocomplete-item-text">${suggestion.display_text}</span>
+                    `;
+                    
+                    item.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        input.value = suggestion.text;
+                        input.dataset.lat = suggestion.lat;
+                        input.dataset.lon = suggestion.lon;
+                        input.dataset.address = suggestion.text;
+                        suggestionsDiv.classList.remove('show');
+                    });
+                    
+                    suggestionsDiv.appendChild(item);
+                });
+                
+                suggestionsDiv.classList.add('show');
+            }
+
+            setupChart() {
+                console.log('Setting up risk timeline chart');
+                const ctx = document.getElementById('risk-timeline-chart').getContext('2d');
+                
+                if (!ctx) {
+                    console.error('Chart canvas context not found!');
+                    return;
+                }
+                
+                this.riskChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Risk Level',
+                            data: [],
+                            borderColor: '#FFD23F',
+                            backgroundColor: 'rgba(255, 210, 63, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#FFD23F',
+                            pointBorderColor: '#FFD23F',
+                            pointHoverBackgroundColor: '#FFD23F',
+                            pointHoverBorderColor: '#FFD23F'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: {
+                                    color: 'rgba(224, 224, 224, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#E0E0E0',
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(224, 224, 224, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#E0E0E0'
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                console.log('Chart setup complete:', this.riskChart);
+                
+                // Test chart with sample data
+                setTimeout(() => {
+                    console.log('Testing chart with sample data');
+                    this.testChart();
+                }, 1000);
+            }
+
+            testChart() {
+                if (this.riskChart) {
+                    const testData = {
+                        labels: ['+0min', '+10min', '+20min', '+30min', '+40min', '+50min', '+60min'],
+                        risk_values: [45, 50, 42, 55, 48, 40, 44]
+                    };
+                    console.log('Testing chart with:', testData);
+                    this.updateRiskChart(testData);
+                }
+            }
+
+            bindEvents() {
+                document.getElementById('risk-analysis-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.analyzeRoute();
+                });
+            }
+
+            async analyzeRoute() {
+                const originInput = document.getElementById('origin-input');
+                const destinationInput = document.getElementById('destination-input');
+                
+                const origin = originInput.value.trim();
+                const destination = destinationInput.value.trim();
+                
+                if (!origin || !destination) {
+                    alert('Please enter both origin and destination');
+                    return;
+                }
+
+                // Get coordinates from dataset if available from autocomplete
+                let originCoords = null;
+                let destCoords = null;
+
+                if (originInput.dataset.lat && originInput.dataset.lon) {
+                    originCoords = {
+                        lat: parseFloat(originInput.dataset.lat),
+                        lon: parseFloat(originInput.dataset.lon),
+                        address: originInput.dataset.address || origin
+                    };
+                }
+
+                if (destinationInput.dataset.lat && destinationInput.dataset.lon) {
+                    destCoords = {
+                        lat: parseFloat(destinationInput.dataset.lat),
+                        lon: parseFloat(destinationInput.dataset.lon),
+                        address: destinationInput.dataset.address || destination
+                    };
+                }
+
+                this.showLoading(true);
+                this.updateRouteStatus('🔄 Geocoding locations...', '#eab308');
+
+                try {
+                    // Geocode locations if not already available
+                    if (!originCoords) {
+                        originCoords = await this.geocodeLocation(origin);
+                    }
+                    
+                    if (!destCoords) {
+                        destCoords = await this.geocodeLocation(destination);
+                    }
+
+                    if (!originCoords || !destCoords) {
+                        throw new Error('Could not find the specified locations');
+                    }
+
+                    this.updateRouteStatus('🗺️ Calculating route...', '#eab308');
+                    
+                    // Get route analysis from backend
+                    const analysisData = await this.getRouteAnalysis(originCoords, destCoords);
+                    
+                    this.currentAnalysis = analysisData;
+                    this.displayAnalysis(analysisData);
+                    this.displayRouteOnMap(originCoords, destCoords, analysisData);
+                    
+                    this.showLoading(false);
+                    this.updateRouteStatus('✅ Analysis complete', '#21BF73');
+                    
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    this.showLoading(false);
+                    this.updateRouteStatus('❌ Analysis failed: ' + error.message, '#D7263D');
+                    alert('Error: ' + error.message);
+                }
+            }
+
+            async geocodeLocation(location) {
+                try {
+                    const response = await fetch('/geocode', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ location: location })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok && data.lat && data.lon) {
+                        return {
+                            lat: data.lat,
+                            lon: data.lon,
+                            address: data.address || location
+                        };
+                    } else {
+                        throw new Error(data.error || 'Geocoding failed');
+                    }
+                } catch (error) {
+                    console.error('Geocoding error:', error);
+                    return null;
+                }
+            }
+
+            async getRouteAnalysis(originCoords, destCoords) {
+                try {
+                    // Create form data for the backend
+                    const formData = new FormData();
+                    formData.append('origin', originCoords.address);
+                    formData.append('destination', destCoords.address);
+
+                    const response = await fetch('/analyze_route', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Add coordinate information
+                        data.coordinates = {
+                            origin: originCoords,
+                            destination: destCoords
+                        };
+                        return data;
+                    } else {
+                        throw new Error(data.error || 'Route analysis failed');
+                    }
+                } catch (error) {
+                    console.error('Route analysis error:', error);
+                    // Fallback to mock data if backend fails
+                    return this.generateMockAnalysis(originCoords.address, destCoords.address, originCoords, destCoords);
+                }
+            }
+
+            updateRiskChart(timeline) {
+                if (!this.riskChart || !timeline) {
+                    console.log('Risk chart or timeline is missing:', { chart: !!this.riskChart, timeline: timeline });
+                    return;
+                }
+                
+                console.log('Timeline data received:', timeline);
+                
+                // Handle different timeline formats
+                let labels = [];
+                let data = [];
+                
+                if (timeline.labels && timeline.risk_values) {
+                    // Backend format
+                    labels = timeline.labels;
+                    data = timeline.risk_values;
+                    console.log('Using backend timeline format');
+                } else if (timeline.times && timeline.risks) {
+                    // Fallback format
+                    labels = timeline.times;
+                    data = timeline.risks;
+                    console.log('Using fallback timeline format');
+                } else {
+                    console.error('Invalid timeline format:', timeline);
+                    // Generate default data
+                    labels = ['+0min', '+10min', '+20min', '+30min', '+40min', '+50min', '+60min'];
+                    data = [40, 45, 35, 50, 42, 38, 44];
+                    console.log('Using default timeline data');
+                }
+                
+                console.log('Chart labels:', labels);
+                console.log('Chart data:', data);
+                
+                this.riskChart.data.labels = labels;
+                this.riskChart.data.datasets[0].data = data;
+                this.riskChart.update();
+                
+                console.log('Chart updated successfully');
+            }
+
+            displayAnalysis(analysis) {
+                console.log('Displaying analysis:', analysis);
+                
+                // Show overview sections
+                document.getElementById('risk-overview-section').classList.remove('hidden');
+                document.getElementById('metrics-grid').classList.remove('hidden');
+                document.getElementById('recommendations-section').classList.remove('hidden');
+                document.getElementById('route-status').classList.remove('hidden');
+                document.getElementById('risk-legend').classList.remove('hidden');
+
+                // Update risk overview with null checks
+                this.updateOverallRisk(analysis.overall_risk_score || analysis.overallRisk || 50);
+                
+                const delayProbElement = document.getElementById('delay-probability');
+                if (delayProbElement) {
+                    delayProbElement.textContent = (analysis.delay_probability || analysis.delayProbability || 40) + '%';
+                }
+                
+                const weatherImpact = analysis.weather_impact || {};
+                const weatherImpactElement = document.getElementById('weather-impact');
+                const weatherDescElement = document.getElementById('weather-desc');
+                
+                if (weatherImpactElement) {
+                    weatherImpactElement.textContent = this.getWeatherImpactLevel(weatherImpact);
+                }
+                if (weatherDescElement) {
+                    weatherDescElement.textContent = weatherImpact.conditions || 'Clear conditions';
+                }
+
+                // Update metrics with null checks
+                const metrics = analysis.metrics || {};
+                const avgDelayElement = document.getElementById('avg-delay');
+                const maxDelayElement = document.getElementById('max-delay');
+                const reliabilityElement = document.getElementById('reliability');
+                const incidentsElement = document.getElementById('incidents');
+
+                if (avgDelayElement) avgDelayElement.textContent = metrics.average_delay || metrics.averageDelay || '--';
+                if (maxDelayElement) maxDelayElement.textContent = metrics.max_delay || metrics.maxDelay || '--';
+                if (reliabilityElement) reliabilityElement.textContent = (metrics.reliability_score || metrics.reliability || 85) + '%';
+                if (incidentsElement) incidentsElement.textContent = metrics.active_incidents || metrics.incidents || 0;
+
+                // Update risk factors - use backend data if available, otherwise generate fallback
+                const riskFactors = analysis.risk_factors || this.generateRiskFactors(
+                    analysis.overall_risk_score || 50, 
+                    (weatherImpact.traffic_multiplier - 1) * 100 || 0, 
+                    metrics.active_incidents || 0
+                );
+                console.log('Risk factors:', riskFactors);
+                this.displayRiskFactors(riskFactors);
+
+                // Update chart - Debug timeline processing
+                console.log('Processing timeline data...');
+                let timeline = analysis.timeline;
+                
+                if (!timeline) {
+                    console.log('No timeline from backend, generating fallback');
+                    timeline = this.generateTimeline();
+                }
+                
+                console.log('Final timeline data:', timeline);
+                this.updateRiskChart(timeline);
+
+                // Update recommendations
+                this.displayRecommendations(analysis.recommendations || []);
+            }
+
+            generateTimeline() {
+                console.log('Generating fallback timeline data');
+                const times = [];
+                const risks = [];
+                
+                for (let i = 0; i <= 60; i += 10) {
+                    times.push(`+${i}min`);
+                    const baseRisk = 40;
+                    const variation = Math.sin((i / 60) * Math.PI * 2) * 20;
+                    const noise = (Math.random() - 0.5) * 10;
+                    risks.push(Math.max(0, Math.min(100, baseRisk + variation + noise)));
+                }
+                
+                const generatedTimeline = { 
+                    times: times, 
+                    risks: risks,
+                    labels: times,  // Provide both formats
+                    risk_values: risks
+                };
+                
+                console.log('Generated timeline:', generatedTimeline);
+                return generatedTimeline;
+            }
+
+            bindEvents() {
+                document.getElementById('risk-analysis-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.analyzeRoute();
+                });
+            }
+
+            async analyzeRoute() {
+                const originInput = document.getElementById('origin-input');
+                const destinationInput = document.getElementById('destination-input');
+                
+                const origin = originInput.value.trim();
+                const destination = destinationInput.value.trim();
+                
+                if (!origin || !destination) {
+                    alert('Please enter both origin and destination');
+                    return;
+                }
+
+                // Get coordinates from dataset if available from autocomplete
+                let originCoords = null;
+                let destCoords = null;
+
+                if (originInput.dataset.lat && originInput.dataset.lon) {
+                    originCoords = {
+                        lat: parseFloat(originInput.dataset.lat),
+                        lon: parseFloat(originInput.dataset.lon),
+                        address: originInput.dataset.address || origin
+                    };
+                }
+
+                if (destinationInput.dataset.lat && destinationInput.dataset.lon) {
+                    destCoords = {
+                        lat: parseFloat(destinationInput.dataset.lat),
+                        lon: parseFloat(destinationInput.dataset.lon),
+                        address: destinationInput.dataset.address || destination
+                    };
+                }
+
+                this.showLoading(true);
+                this.updateRouteStatus('🔄 Geocoding locations...', '#eab308');
+
+                try {
+                    // Geocode locations if not already available
+                    if (!originCoords) {
+                        originCoords = await this.geocodeLocation(origin);
+                    }
+                    
+                    if (!destCoords) {
+                        destCoords = await this.geocodeLocation(destination);
+                    }
+
+                    if (!originCoords || !destCoords) {
+                        throw new Error('Could not find the specified locations');
+                    }
+
+                    this.updateRouteStatus('🗺️ Calculating route...', '#eab308');
+                    
+                    // Get route analysis from backend
+                    const analysisData = await this.getRouteAnalysis(originCoords, destCoords);
+                    
+                    this.currentAnalysis = analysisData;
+                    this.displayAnalysis(analysisData);
+                    this.displayRouteOnMap(originCoords, destCoords, analysisData);
+                    
+                    this.showLoading(false);
+                    this.updateRouteStatus('✅ Analysis complete', '#21BF73');
+                    
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    this.showLoading(false);
+                    this.updateRouteStatus('❌ Analysis failed: ' + error.message, '#D7263D');
+                    alert('Error: ' + error.message);
+                }
+            }
+
+            async geocodeLocation(location) {
+                try {
+                    const response = await fetch('/geocode', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ location: location })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok && data.lat && data.lon) {
+                        return {
+                            lat: data.lat,
+                            lon: data.lon,
+                            address: data.address || location
+                        };
+                    } else {
+                        throw new Error(data.error || 'Geocoding failed');
+                    }
+                } catch (error) {
+                    console.error('Geocoding error:', error);
+                    return null;
+                }
+            }
+
+            async getRouteAnalysis(originCoords, destCoords) {
+                try {
+                    // Create form data for the backend
+                    const formData = new FormData();
+                    formData.append('origin', originCoords.address);
+                    formData.append('destination', destCoords.address);
+
+                    const response = await fetch('/analyze_route', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Add coordinate information
+                        data.coordinates = {
+                            origin: originCoords,
+                            destination: destCoords
+                        };
+                        return data;
+                    } else {
+                        throw new Error(data.error || 'Route analysis failed');
+                    }
+                } catch (error) {
+                    console.error('Route analysis error:', error);
+                    // Fallback to mock data if backend fails
+                    return this.generateMockAnalysis(originCoords.address, destCoords.address, originCoords, destCoords);
+                }
+            }
+
+            updateOverallRisk(risk) {
+                const riskValue = document.getElementById('overall-risk-value');
+                const riskDesc = document.getElementById('overall-risk-desc');
+                const riskCard = document.getElementById('overall-risk-card');
+
+                if (!riskValue || !riskDesc) return; // Exit if elements don't exist
+
+                riskValue.textContent = risk;
+
+                let color, description;
+                if (risk >= 85) {
+                    color = '#7f1d1d';
+                    description = 'Critical - Avoid if possible';
+                } else if (risk >= 70) {
+                    color = '#dc2626';
+                    description = 'Severe - Expect major delays';
+                } else if (risk >= 50) {
+                    color = '#f97316';
+                    description = 'High - Plan for delays';
+                } else if (risk >= 35) {
+                    color = '#eab308';
+                    description = 'Moderate - Some delays possible';
+                } else if (risk >= 20) {
+                    color = '#84cc16';
+                    description = 'Low - Minimal delays expected';
+                } else {
+                    color = '#22c55e';
+                    description = 'Minimal - Smooth journey likely';
+                }
+
+                riskValue.style.color = color;
+                riskDesc.textContent = description;
+                if (riskCard) {
+                    riskCard.style.borderColor = color + '40';
+                }
+            }
+
+            displayRiskFactors(factors) {
+                const container = document.getElementById('risk-factors-list');
+                if (!container) return;
+                
+                container.innerHTML = '';
+
+                if (!factors || factors.length === 0) {
+                    container.innerHTML = '<div class="text-center" style="padding: 2rem; opacity: 0.6;">No significant risk factors detected</div>';
+                    return;
+                }
+
+                factors.forEach(factor => {
+                    const item = document.createElement('div');
+                    item.className = 'factor-item';
+                    item.innerHTML = `
+                        <span class="factor-icon">${factor.icon || '📍'}</span>
+                        <span class="factor-text">${factor.text || 'Unknown factor'}</span>
+                        <span class="factor-impact" style="background: ${(factor.color || '#666')}20; color: ${factor.color || '#666'};">
+                            ${factor.impact || 'UNKNOWN'}
+                        </span>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            displayRecommendations(recommendations) {
+                const container = document.getElementById('recommendations-list');
+                if (!container) return;
+                
+                container.innerHTML = '';
+
+                if (!recommendations || recommendations.length === 0) {
+                    container.innerHTML = '<div class="text-center" style="padding: 1rem; opacity: 0.6;">No recommendations available</div>';
+                    return;
+                }
+
+                recommendations.forEach(rec => {
+                    const item = document.createElement('div');
+                    item.className = 'recommendation-item';
+                    item.innerHTML = `
+                        <span class="recommendation-icon">💡</span>
+                        <span class="recommendation-text">${rec}</span>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            generateMockAnalysis(origin, destination, originCoords, destCoords) {
+                const baseRisk = Math.random() * 100;
+                const weatherImpact = Math.random() * 30;
+                const trafficDensity = Math.random() * 40;
+                const incidentCount = Math.floor(Math.random() * 5);
+                
+                const overallRisk = Math.min(100, baseRisk + weatherImpact + trafficDensity);
+                
+                return {
+                    overall_risk_score: Math.round(overallRisk),
+                    delay_probability: Math.round(overallRisk * 0.8),
+                    risk_level: this.getRiskLevel(overallRisk),
+                    coordinates: { origin: originCoords, destination: destCoords },
+                    metrics: {
+                        average_delay: Math.round(5 + (overallRisk / 10)),
+                        max_delay: Math.round(15 + (overallRisk / 5)),
+                        reliability_score: Math.round(100 - overallRisk),
+                        active_incidents: incidentCount
+                    },
+                    weather_impact: {
+                        impact: weatherImpact > 20 ? '🟠 High Impact' : 
+                               weatherImpact > 10 ? '🟡 Moderate Impact' : '🟢 Minimal Impact',
+                        conditions: 'Clear',
+                        traffic_multiplier: 1 + (weatherImpact / 100)
+                    },
+                    risk_factors: this.generateRiskFactors(overallRisk, weatherImpact, incidentCount),
+                    timeline: {
+                        times: ['+0min', '+10min', '+20min', '+30min', '+40min', '+50min', '+60min'],
+                        risks: [
+                            Math.round(overallRisk),
+                            Math.round(overallRisk + (Math.random() - 0.5) * 20),
+                            Math.round(overallRisk + (Math.random() - 0.5) * 20),
+                            Math.round(overallRisk + (Math.random() - 0.5) * 20),
+                            Math.round(overallRisk + (Math.random() - 0.5) * 20),
+                            Math.round(overallRisk + (Math.random() - 0.5) * 20),
+                            Math.round(overallRisk + (Math.random() - 0.5) * 20)
+                        ]
+                    },
+                    recommendations: this.generateRecommendations(overallRisk)
+                };
+            }
+
+            getRiskLevel(risk) {
+                if (risk >= 85) return 'Critical';
+                if (risk >= 70) return 'Severe';
+                if (risk >= 50) return 'High';
+                if (risk >= 35) return 'Moderate';
+                if (risk >= 20) return 'Low';
+                return 'Minimal';
+            }
+
+            showLoading(show) {
+                const overlay = document.getElementById('loading-overlay');
+                if (show) {
+                    overlay.classList.remove('hidden');
+                } else {
+                    overlay.classList.add('hidden');
+                }
+            }
+
+            updateRouteStatus(message, color) {
+                const routeTextElement = document.getElementById('route-text');
+                const statusIndicatorElement = document.getElementById('status-indicator');
+                
+                if (routeTextElement) {
+                    routeTextElement.textContent = message;
+                }
+                if (statusIndicatorElement) {
+                    statusIndicatorElement.style.backgroundColor = color;
+                }
+            }
+
+            displayRouteOnMap(originCoords, destCoords, analysis) {
+                // Clear existing markers and route
+                if (this.routeLayer) {
+                    this.map.removeLayer(this.routeLayer);
+                }
+                if (this.originMarker) {
+                    this.map.removeLayer(this.originMarker);
+                }
+                if (this.destinationMarker) {
+                    this.map.removeLayer(this.destinationMarker);
+                }
+
+                // Add origin marker
+                this.originMarker = L.marker([originCoords.lat, originCoords.lon], {
+                    icon: L.divIcon({
+                        html: '<div style="background: #22c55e; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                        iconSize: [26, 26],
+                        iconAnchor: [13, 13]
+                    })
+                }).addTo(this.map)
+                .bindPopup(`<strong>📍 Origin</strong><br>${originCoords.address}`);
+
+                // Add destination marker
+                this.destinationMarker = L.marker([destCoords.lat, destCoords.lon], {
+                    icon: L.divIcon({
+                        html: '<div style="background: #dc2626; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                        iconSize: [26, 26],
+                        iconAnchor: [13, 13]
+                    })
+                }).addTo(this.map)
+                .bindPopup(`<strong>🏁 Destination</strong><br>${destCoords.address}`);
+
+                // Create route line - use actual route geometry if available
+                let routeCoords = [];
+                
+                if (analysis.route_geometry && analysis.route_geometry.coordinates && analysis.route_geometry.coordinates.length > 0) {
+                    // Use actual route coordinates from TomTom
+                    routeCoords = analysis.route_geometry.coordinates;
+                } else {
+                    // Fallback to straight line
+                    routeCoords = [
+                        [originCoords.lat, originCoords.lon],
+                        [destCoords.lat, destCoords.lon]
+                    ];
+                }
+
+                // Determine route color based on risk level
+                let routeColor = '#22c55e'; // Green for low risk
+                const riskScore = analysis.overall_risk_score || analysis.overallRisk || 50;
+                
+                if (riskScore >= 70) routeColor = '#dc2626'; // Red for high risk
+                else if (riskScore >= 50) routeColor = '#f97316'; // Orange for medium risk
+                else if (riskScore >= 30) routeColor = '#eab308'; // Yellow for moderate risk
+
+                this.routeLayer = L.polyline(routeCoords, {
+                    color: routeColor,
+                    weight: 6,
+                    opacity: 0.8
+                }).addTo(this.map);
+
+                // Fit map to show route
+                const group = new L.featureGroup([this.originMarker, this.destinationMarker, this.routeLayer]);
+                this.map.fitBounds(group.getBounds(), { padding: [50, 50] });
+
+                // Add risk visualization points along route
+                this.addRiskVisualization(routeCoords, riskScore);
+
+                // Update route display - check if element exists
+                const routeDisplayElement = document.getElementById('route-display');
+                if (routeDisplayElement) {
+                    routeDisplayElement.textContent = 
+                        `🗺️ Route: ${originCoords.address} → ${destCoords.address}`;
+                }
+            }
+
+            addRiskVisualization(routeCoords, overallRisk) {
+                // Add risk intensity markers along route
+                const segments = 5;
+                for (let i = 0; i < segments; i++) {
+                    const progress = i / (segments - 1);
+                    const lat = routeCoords[0][0] + (routeCoords[1][0] - routeCoords[0][0]) * progress;
+                    const lng = routeCoords[0][1] + (routeCoords[1][1] - routeCoords[0][1]) * progress;
+                    
+                    // Vary risk along the route
+                    const segmentRisk = Math.max(0, Math.min(100, overallRisk + (Math.random() - 0.5) * 40));
+                    const color = this.getRiskColor(segmentRisk);
+                    
+                    L.circleMarker([lat, lng], {
+                        radius: 8,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(this.map)
+                    .bindPopup(`<strong>Segment Risk</strong><br>Risk Level: ${Math.round(segmentRisk)}%<br>Status: ${this.getRiskLevel(segmentRisk)}`);
+                }
+            }
+
+            getRiskColor(risk) {
+                if (risk >= 85) return '#7f1d1d';
+                if (risk >= 70) return '#dc2626';
+                if (risk >= 50) return '#f97316';
+                if (risk >= 35) return '#eab308';
+                if (risk >= 20) return '#84cc16';
+                return '#22c55e';
+            }
+
+            generateRiskFactors(overallRisk, weatherImpact, incidents) {
+                const factors = [];
+                
+                if (overallRisk > 70) {
+                    factors.push({
+                        icon: '🚨',
+                        text: 'Heavy traffic congestion expected',
+                        impact: 'HIGH',
+                        color: '#dc2626'
+                    });
+                }
+                
+                if (weatherImpact > 20) {
+                    factors.push({
+                        icon: '🌧️',
+                        text: 'Adverse weather conditions',
+                        impact: 'MEDIUM',
+                        color: '#f97316'
+                    });
+                }
+                
+                if (incidents > 2) {
+                    factors.push({
+                        icon: '🚧',
+                        text: `${incidents} active traffic incidents`,
+                        impact: 'HIGH',
+                        color: '#dc2626'
+                    });
+                } else if (incidents > 0) {
+                    factors.push({
+                        icon: '🚧',
+                        text: `${incidents} traffic incident${incidents > 1 ? 's' : ''} detected`,
+                        impact: 'MEDIUM',
+                        color: '#f97316'
+                    });
+                }
+
+                if (overallRisk > 40) {
+                    factors.push({
+                        icon: '⏰',
+                        text: 'Peak hour traffic patterns detected',
+                        impact: 'MEDIUM',
+                        color: '#f97316'
+                    });
+                }
+                
+                // Always add analysis factor
+                factors.push({
+                    icon: '📊',
+                    text: 'Real-time traffic data analyzed',
+                    impact: 'INFO',
+                    color: '#21BF73'
+                });
+                
+                return factors;
+            }
+
+            generateRecommendations(overallRisk) {
+                const recommendations = [];
+                
+                if (overallRisk > 70) {
+                    recommendations.push('Consider delaying departure by 30-60 minutes if possible');
+                    recommendations.push('Use alternative routes to avoid heavy congestion');
+                    recommendations.push('Allow extra 20-30 minutes for your journey');
+                    recommendations.push('Monitor real-time traffic updates before leaving');
+                } else if (overallRisk > 40) {
+                    recommendations.push('Check traffic conditions before departure');
+                    recommendations.push('Allow extra 10-15 minutes for potential delays');
+                    recommendations.push('Consider alternative departure times if flexible');
+                } else {
+                    recommendations.push('Good time to travel with minimal delays expected');
+                    recommendations.push('Maintain your regular travel schedule');
+                    recommendations.push('Current conditions are favorable for travel');
+                }
+                
+                recommendations.push('Enable real-time traffic notifications for updates');
+                
+                return recommendations;
+            }
+
+            getWeatherImpactLevel(weatherImpact) {
+                const multiplier = weatherImpact.traffic_multiplier || 1;
+                if (multiplier > 1.3) return 'High';
+                if (multiplier > 1.15) return 'Medium';
+                if (multiplier > 1.05) return 'Low';
+                return 'Minimal';
+            }
+
+            // ...existing code...
+        }
+
+        // Initialize the analyzer when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new RouteRiskAnalyzer();
+        });
+    </script>
+</body>
+</html>

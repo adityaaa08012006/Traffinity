@@ -13,6 +13,11 @@ WEATHER_API_KEY = "3f17cc8fc635e6b29600fb3de9e788fa"
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'traffinity_secret_key'
+
+# Configure static file serving
+app.static_folder = 'static'
+app.static_url_path = '/static'
+
 socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False, 
                    async_mode='threading', ping_timeout=20, ping_interval=10)
 
@@ -532,8 +537,8 @@ def monitor_route_conditions(origin_lat, origin_lon, dest_lat, dest_lon, session
 
 @app.route('/')
 def index():
-    """Redirect to auth page on app startup"""
-    return redirect('/auth')
+    """Serve the main dashboard with route risk analysis option"""
+    return render_template('main.html')
 
 @app.route('/auth')
 def auth():
@@ -1378,24 +1383,287 @@ def suggest_locations():
             "error": f"Internal server error: {str(e)}"
         }), 500
 
-@socketio.on('connect')
-def handle_connect():
-    print(f"Client connected")
-    emit('connected', {'message': 'Connected to Traffinity monitoring service'})
+def get_risk_level(risk_score):
+    """Convert numeric risk score to descriptive level"""
+    if risk_score >= 85:
+        return "Critical"
+    elif risk_score >= 70:
+        return "Severe" 
+    elif risk_score >= 50:
+        return "High"
+    elif risk_score >= 35:
+        return "Moderate"
+    elif risk_score >= 20:
+        return "Low"
+    else:
+        return "Minimal"
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    print(f"Client disconnected")
-
-@socketio.on('join_monitoring')
-def handle_join_monitoring(data):
-    session_id = data.get('session_id')
-    if session_id in active_monitors:
-        emit('joined_monitoring', {
-            'session_id': session_id,
-            'message': f'Joined monitoring session {session_id}'
+def get_enhanced_risk_analysis(origin_lat, origin_lon, dest_lat, dest_lon):
+    """Get comprehensive risk analysis including multiple risk factors"""
+    
+    # Get basic traffic analysis
+    basic_analysis = get_traffic_analysis(origin_lat, origin_lon, dest_lat, dest_lon)
+    
+    # Get actual route geometry from TomTom
+    route_geometry = get_route_geometry(origin_lat, origin_lon, dest_lat, dest_lon)
+    
+    # Calculate enhanced risk metrics
+    weather_multiplier = basic_analysis['weather_impact'].get('traffic_multiplier', 1.0)
+    incident_count = basic_analysis['incidents'].get('total', 0)
+    
+    # Calculate overall risk score (0-100)
+    base_risk = min(50, len(basic_analysis['route_options']) * 10)
+    weather_risk = (weather_multiplier - 1) * 100
+    incident_risk = min(30, incident_count * 10)
+    
+    overall_risk = min(100, base_risk + weather_risk + incident_risk)
+    
+    # Calculate delay probability
+    delay_probability = min(95, overall_risk * 0.8 + (weather_multiplier - 1) * 20)
+    
+    # Generate risk timeline
+    timeline_labels = []
+    timeline_risks = []
+    for i in range(0, 70, 10):
+        timeline_labels.append(f"+{i}min")
+        time_factor = 1 + (i / 60) * 0.2
+        variation = (hash(str(i)) % 20 - 10) / 100
+        timeline_risk = min(100, max(0, overall_risk * time_factor + variation * 100))
+        timeline_risks.append(round(timeline_risk, 1))
+    
+    # Generate risk factors with proper formatting for frontend
+    risk_factors = []
+    
+    if overall_risk > 70:
+        risk_factors.append({
+            "icon": "🚨",
+            "text": "Heavy traffic congestion expected on route",
+            "impact": "HIGH",
+            "color": "#dc2626"
         })
+    
+    if weather_multiplier > 1.2:
+        risk_factors.append({
+            "icon": "🌧️",
+            "text": f"Weather conditions may increase delays by {int((weather_multiplier-1)*100)}%",
+            "impact": "MEDIUM",
+            "color": "#f97316"
+        })
+    
+    if incident_count > 0:
+        risk_factors.append({
+            "icon": "🚧",
+            "text": f"{incident_count} active traffic incident{'s' if incident_count > 1 else ''} detected",
+            "impact": "HIGH" if incident_count > 2 else "MEDIUM",
+            "color": "#dc2626" if incident_count > 2 else "#f97316"
+        })
+    
+    # Add traffic density factor
+    if len(basic_analysis['route_options']) > 3:
+        risk_factors.append({
+            "icon": "🚗",
+            "text": "Multiple route alternatives suggest high traffic density",
+            "impact": "MEDIUM",
+            "color": "#eab308"
+        })
+    
+    # Add weather factor if conditions are clear
+    if weather_multiplier <= 1.1:
+        risk_factors.append({
+            "icon": "☀️",
+            "text": "Clear weather conditions - minimal impact",
+            "impact": "LOW",
+            "color": "#21BF73"
+        })
+    
+    # Always add data analysis factor
+    risk_factors.append({
+        "icon": "📊",
+        "text": "Real-time traffic data analyzed for accuracy",
+        "impact": "INFO",
+        "color": "#21BF73"
+    })
+    
+    # Generate recommendations
+    recommendations = []
+    
+    if overall_risk > 80:
+        recommendations.extend([
+            "Consider postponing travel by 1-2 hours if possible",
+            "Use alternative transportation methods", 
+            "Allow 40-60 extra minutes for journey"
+        ])
+    elif overall_risk > 60:
+        recommendations.extend([
+            "Delay departure by 30-45 minutes if flexible",
+            "Monitor traffic updates before leaving",
+            "Allow 20-30 extra minutes for journey"
+        ])
+    elif overall_risk > 40:
+        recommendations.extend([
+            "Check traffic conditions before departure",
+            "Allow 10-15 extra minutes for journey"
+        ])
+    else:
+        recommendations.extend([
+            "Good time to travel with minimal delays expected",
+            "Maintain regular travel schedule"
+        ])
+    
+    recommendations.append("Enable real-time traffic notifications")
+    
+    return {
+        "overall_risk_score": round(overall_risk),
+        "delay_probability": round(delay_probability),
+        "risk_level": get_risk_level(overall_risk),
+        "risk_factors": risk_factors,  # Properly formatted risk factors
+        "timeline": {
+            "labels": timeline_labels,
+            "risk_values": timeline_risks
+        },
+        "recommendations": recommendations,
+        "metrics": {
+            "average_delay": round(5 + (overall_risk / 10)),
+            "max_delay": round(15 + (overall_risk / 5)),
+            "reliability_score": round(100 - overall_risk),
+            "active_incidents": incident_count
+        },
+        "weather_impact": basic_analysis['weather_impact'],
+        "traffic_status": basic_analysis['traffic_status'],
+        "route_options": basic_analysis['route_options'][:3],
+        "route_geometry": route_geometry,
+        "coordinates": {
+            "origin": {"lat": origin_lat, "lon": origin_lon},
+            "destination": {"lat": dest_lat, "lon": dest_lon}
+        }
+    }
 
+def get_route_geometry(origin_lat, origin_lon, dest_lat, dest_lon):
+    """Get detailed route geometry from TomTom Routing API"""
+    url = f"https://api.tomtom.com/routing/1/calculateRoute/{origin_lat},{origin_lon}:{dest_lat},{dest_lon}/json"
+    params = {
+        "key": API_KEY,
+        "traffic": "true",
+        "routeType": "fastest",
+        "travelMode": "car",
+        "instructionsType": "coded",
+        "routeRepresentation": "polyline"
+    }
+    
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if 'routes' in data and data['routes']:
+            route = data['routes'][0]
+            
+            # Extract route points
+            route_points = []
+            if 'legs' in route:
+                for leg in route['legs']:
+                    if 'points' in leg:
+                        for point in leg['points']:
+                            route_points.append([point['latitude'], point['longitude']])
+            
+            # Extract route summary
+            summary = route.get('summary', {})
+            
+            return {
+                "coordinates": route_points,
+                "distance_meters": summary.get('lengthInMeters', 0),
+                "duration_seconds": summary.get('travelTimeInSeconds', 0),
+                "traffic_delay_seconds": summary.get('trafficDelayInSeconds', 0),
+                "instructions": route.get('guidance', {}).get('instructions', [])[:10]
+            }
+    except requests.exceptions.RequestException as e:
+        print(f"Route geometry error: {e}")
+        # Return simple straight line as fallback
+        return {
+            "coordinates": [[origin_lat, origin_lon], [dest_lat, dest_lon]], 
+            "distance_meters": 0,
+            "duration_seconds": 0,
+            "traffic_delay_seconds": 0,
+            "instructions": []
+        }
+
+@app.route('/route-risk-analysis')
+def route_risk_analysis():
+    """Serve the route risk analysis page"""
+    return render_template('rr_analysis.html')
+
+@app.route('/analyze_route', methods=['POST'])
+def analyze_route():
+    """Handle route risk analysis form submission with enhanced risk assessment"""
+    try:
+        # Get form data
+        origin = request.form.get('origin', '').strip()
+        destination = request.form.get('destination', '').strip()
+        
+        if not origin or not destination:
+            return jsonify({"error": "Both origin and destination are required"}), 400
+        
+        # Geocode locations
+        print(f"🔍 Analyzing route risk: {origin} → {destination}")
+        origin_coords = geocode_location(origin)
+        dest_coords = geocode_location(destination)
+        
+        if not origin_coords or not dest_coords:
+            return jsonify({"error": "Could not find the specified locations"}), 400
+        
+        # Get enhanced risk analysis
+        risk_analysis = get_enhanced_risk_analysis(
+            origin_coords['lat'], origin_coords['lon'],
+            dest_coords['lat'], dest_coords['lon']
+        )
+        
+        # Add route information
+        risk_analysis['route_info'] = {
+            'origin': origin,
+            'destination': destination,
+            'origin_coords': origin_coords,
+            'dest_coords': dest_coords
+        }
+        
+        # Return JSON response for AJAX or render template for form submission
+        if request.is_json or request.headers.get('Accept') == 'application/json':
+            return jsonify(risk_analysis)
+        else:
+            # Render the results page with analysis data
+            return render_template('rr_analysis.html', analysis=risk_analysis)
+            
+    except Exception as e:
+        print(f"Route risk analysis error: {e}")
+        if request.is_json or request.headers.get('Accept') == 'application/json':
+            return jsonify({"error": str(e)}), 500
+        else:
+            return render_template('rr_analysis.html', error=str(e))
+
+@app.route('/get_route_details', methods=['POST'])
+def get_route_details():
+    """API endpoint to get detailed route information with geometry"""
+    try:
+        data = request.get_json()
+        origin_lat = float(data.get('origin_lat'))
+        origin_lon = float(data.get('origin_lon'))
+        dest_lat = float(data.get('dest_lat'))
+        dest_lon = float(data.get('dest_lon'))
+        
+        # Get route geometry and analysis
+        route_geometry = get_route_geometry(origin_lat, origin_lon, dest_lat, dest_lon)
+        risk_analysis = get_enhanced_risk_analysis(origin_lat, origin_lon, dest_lat, dest_lon)
+        
+        return jsonify({
+            "route_geometry": route_geometry,
+            "risk_analysis": risk_analysis,
+            "success": True
+        })
+        
+    except Exception as e:
+        print(f"Route details error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# Add the missing auth routes that were referenced in the templates
 @app.route('/auth/login', methods=['POST'])
 def auth_login():
     """Handle login requests"""
@@ -1474,12 +1742,6 @@ def auth_register():
         
         print(f"✅ Registration successful: {name} ({email})")
         
-        # In a real app, you would:
-        # 1. Hash the password (using bcrypt or similar)
-        # 2. Store user data in database
-        # 3. Send verification email
-        # 4. Create user session
-        
         return jsonify({
             "success": True,
             "message": "Account created successfully! You can now sign in.",
@@ -1494,11 +1756,6 @@ def auth_register():
 def auth_logout():
     """Handle logout requests"""
     try:
-        # In a real app, you would:
-        # 1. Invalidate the user session
-        # 2. Clear authentication tokens
-        # 3. Log the logout event
-        
         print("✅ User logged out")
         return jsonify({
             "success": True,
@@ -1536,6 +1793,12 @@ def verify_session():
 def chrome_devtools():
     """Handle Chrome DevTools JSON request to prevent 404 errors in logs"""
     return jsonify({"error": "Not supported"}), 404
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Serve static files with proper headers"""
+    from flask import send_from_directory
+    return send_from_directory(app.static_folder, filename)
 
 if __name__ == "__main__":
     # Check if API keys are set
