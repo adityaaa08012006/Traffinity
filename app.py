@@ -820,6 +820,12 @@ def debug_autocomplete():
     from flask import send_from_directory
     return send_from_directory('.', 'debug_autocomplete.html')
 
+@app.route('/test_map.html')
+def test_map():
+    """Serve the test map page"""
+    from flask import send_from_directory
+    return send_from_directory('.', 'test_map.html')
+
 @app.route('/test_tomtom_api')
 def test_tomtom_api():
     """Test if TomTom API is accessible"""

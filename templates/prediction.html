@@ -31,7 +31,7 @@
             overflow-x: hidden;
         }
         
-        /* Animated background */
+        /* Simple background */
         body::before {
             content: '';
             position: fixed;
@@ -39,9 +39,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at 20% 50%, rgba(215, 38, 61, 0.05) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(255, 210, 63, 0.03) 0%, transparent 50%),
-                        radial-gradient(circle at 40% 80%, rgba(33, 191, 115, 0.04) 0%, transparent 50%);
+            background: linear-gradient(135deg, rgba(28, 28, 28, 0.3) 0%, rgba(28, 28, 28, 0.8) 100%);
             pointer-events: none;
             z-index: 1;
         }
@@ -50,32 +48,20 @@
             max-width: 1200px;
             margin: 0 auto;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             overflow: hidden;
             position: relative;
             z-index: 2;
-            animation: containerFloat 6s ease-in-out infinite;
-        }
-        
-        @keyframes containerFloat {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-5px);
-            }
         }
         
         .header {
-            background: linear-gradient(135deg, rgba(215, 38, 61, 0.8) 0%, rgba(28, 28, 28, 0.9) 100%);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: var(--charcoal-black);
             color: var(--tech-gray);
-            padding: 30px;
+            padding: 25px;
             text-align: center;
             position: relative;
             border-bottom: 1px solid var(--glass-border);
@@ -103,7 +89,6 @@
         .back-btn:hover {
             background: var(--signal-yellow);
             color: var(--charcoal-black);
-            transform: translateY(-50%) translateX(-2px);
             border-color: var(--signal-yellow);
         }
         
@@ -151,7 +136,7 @@
         }
         
         .analyze-btn {
-            background: linear-gradient(135deg, var(--traffic-red) 0%, var(--signal-yellow) 100%);
+            background: var(--signal-yellow);
             color: var(--charcoal-black);
             border: none;
             padding: 15px 30px;
@@ -164,9 +149,7 @@
         }
         
         .analyze-btn:hover {
-            transform: translateY(-2px);
-            background: linear-gradient(135deg, var(--green-light) 0%, var(--signal-yellow) 100%);
-            box-shadow: 0 5px 15px rgba(33, 191, 115, 0.4);
+            background: var(--green-light);
         }
         
         .results {
@@ -175,33 +158,18 @@
         
         .result-card {
             background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
-            border-radius: 15px;
+            border-radius: 12px;
             padding: 25px;
             margin-bottom: 25px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             transition: all 0.3s ease;
-            animation: cardSlideIn 0.6s ease-out;
         }
         
         .result-card:hover {
             background: rgba(224, 224, 224, 0.08);
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
             border-color: var(--signal-yellow);
-        }
-        
-        @keyframes cardSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
         
         .result-card h3 {
@@ -214,9 +182,53 @@
         }
         
         .weather-card {
-            background: linear-gradient(135deg, rgba(33, 191, 115, 0.2) 0%, rgba(215, 38, 61, 0.1) 100%);
-            border: 1px solid rgba(33, 191, 115, 0.3);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-left: 4px solid var(--green-light);
             color: var(--tech-gray);
+        }
+        
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .weather-item {
+            background: rgba(224, 224, 224, 0.03);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .weather-label {
+            color: var(--tech-gray);
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .weather-value {
+            color: var(--signal-yellow);
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        
+        .weather-impact {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(224, 224, 224, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid var(--signal-yellow);
+        }
+        
+        .weather-impact.high {
+            border-left-color: var(--traffic-red);
+        }
+        
+        .weather-impact.low {
+            border-left-color: var(--green-light);
         }
         
         .traffic-status-card {
@@ -229,29 +241,28 @@
         .traffic-status-display {
             margin: 15px 0;
             padding: 20px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 1.4em;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            animation: pulseGlow 2s ease-in-out infinite alternate;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.2em;
+            border: 1px solid var(--glass-border);
         }
         
         .traffic-status-display.low {
-            background: linear-gradient(135deg, var(--green-light), #1a9e5c);
-            border: 2px solid var(--green-light);
-            box-shadow: 0 0 20px rgba(33, 191, 115, 0.4);
+            background: rgba(33, 191, 115, 0.15);
+            border-color: var(--green-light);
+            color: var(--green-light);
         }
         
         .traffic-status-display.medium {
-            background: linear-gradient(135deg, var(--signal-yellow), #e6bb2d);
-            border: 2px solid var(--signal-yellow);
-            box-shadow: 0 0 20px rgba(255, 210, 63, 0.4);
+            background: rgba(255, 210, 63, 0.15);
+            border-color: var(--signal-yellow);
+            color: var(--signal-yellow);
         }
         
         .traffic-status-display.high {
-            background: linear-gradient(135deg, var(--traffic-red), #b91c32);
-            border: 2px solid var(--traffic-red);
-            box-shadow: 0 0 20px rgba(215, 38, 61, 0.4);
+            background: rgba(215, 38, 61, 0.15);
+            border-color: var(--traffic-red);
+            color: var(--traffic-red);
         }
         
         .traffic-status-text {
@@ -266,10 +277,7 @@
             font-style: italic;
         }
         
-        @keyframes pulseGlow {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.02); }
-        }
+
         
         .route-grid {
             display: grid;
@@ -360,8 +368,6 @@
         
         .route-bar-container:hover {
             background: rgba(224, 224, 224, 0.08);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 210, 63, 0.3);
             cursor: pointer;
             border-color: var(--signal-yellow);
         }
@@ -370,10 +376,10 @@
             display: inline-block;
             margin-top: 10px;
             padding: 8px 15px;
-            background: linear-gradient(135deg, var(--traffic-red), var(--signal-yellow));
+            background: var(--signal-yellow);
             color: var(--charcoal-black);
             text-decoration: none;
-            border-radius: 20px;
+            border-radius: 6px;
             font-size: 0.85em;
             font-weight: 600;
             transition: all 0.3s ease;
@@ -382,63 +388,19 @@
         }
         
         .map-link:hover {
-            background: linear-gradient(135deg, var(--green-light), var(--signal-yellow));
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(33, 191, 115, 0.4);
+            background: var(--green-light);
         }
         
         .route-bar-container.fastest {
             border: 2px solid var(--green-light);
-            background: linear-gradient(135deg, rgba(33, 191, 115, 0.15), var(--glass-bg));
-            box-shadow: 0 0 25px rgba(33, 191, 115, 0.4);
+            background: rgba(33, 191, 115, 0.08);
             padding-top: 35px; /* More padding for fastest route with badge */
-            animation: fastestGlow 2s ease-in-out infinite alternate;
-        }
-        
-        @keyframes fastestGlow {
-            0% {
-                box-shadow: 0 0 25px rgba(33, 191, 115, 0.4);
-            }
-            100% {
-                box-shadow: 0 0 35px rgba(33, 191, 115, 0.6);
-            }
         }
 
         /* Optimal recommendation section */
         .optimal-recommendation {
-            background: linear-gradient(135deg, rgba(33, 191, 115, 0.15), var(--glass-bg)) !important;
+            background: rgba(33, 191, 115, 0.08) !important;
             border: 2px solid var(--green-light) !important;
-            box-shadow: 0 0 30px rgba(33, 191, 115, 0.5) !important;
-            animation: optimalPulse 3s ease-in-out infinite alternate;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .optimal-recommendation::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(33, 191, 115, 0.1), transparent);
-            animation: optimalShimmer 3s infinite;
-        }
-
-        @keyframes optimalPulse {
-            0% {
-                box-shadow: 0 0 25px rgba(33, 191, 115, 0.4);
-                transform: scale(1);
-            }
-            100% {
-                box-shadow: 0 0 35px rgba(33, 191, 115, 0.6);
-                transform: scale(1.01);
-            }
-        }
-
-        @keyframes optimalShimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
         }
         
         .route-bar-header {
@@ -476,36 +438,13 @@
         
         .route-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--traffic-red) 0%, var(--signal-yellow) 100%);
+            background: var(--signal-yellow);
             border-radius: 6px;
-            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
+            transition: width 1s ease-out;
         }
         
         .route-bar-container.fastest .route-bar-fill {
-            background: linear-gradient(90deg, var(--green-light) 0%, var(--signal-yellow) 100%);
-            box-shadow: 0 0 10px rgba(33, 191, 115, 0.5);
-        }
-        
-        .route-bar-fill::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: shimmer 2s infinite;
-        }
-        
-        @keyframes shimmer {
-            0% {
-                left: -100%;
-            }
-            100% {
-                left: 100%;
-            }
+            background: var(--green-light);
         }
         
         .route-details {
@@ -519,64 +458,29 @@
         }
         
         .traffic-delay {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
             font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
-            animation: delayPulse 3s infinite;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .traffic-delay::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: delayShimmer 2s infinite;
+            border: 1px solid;
         }
         
         .traffic-delay.low {
-            background: linear-gradient(135deg, var(--green-light), #1a9e5c);
-            box-shadow: 0 4px 15px rgba(33, 191, 115, 0.4);
+            background: rgba(33, 191, 115, 0.15);
+            color: var(--green-light);
+            border-color: var(--green-light);
         }
         
         .traffic-delay.medium {
-            background: linear-gradient(135deg, var(--signal-yellow), #e6bb2d);
-            box-shadow: 0 4px 15px rgba(255, 210, 63, 0.4);
+            background: rgba(255, 210, 63, 0.15);
+            color: var(--signal-yellow);
+            border-color: var(--signal-yellow);
         }
         
         .traffic-delay.high {
-            background: linear-gradient(135deg, var(--traffic-red), #b91c32);
-            box-shadow: 0 4px 15px rgba(215, 38, 61, 0.4);
-        }
-        
-        @keyframes delayPulse {
-            0%, 100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.05);
-                opacity: 0.9;
-            }
-        }
-        
-        @keyframes delayShimmer {
-            0% {
-                left: -100%;
-            }
-            100% {
-                left: 100%;
-            }
+            background: rgba(215, 38, 61, 0.15);
+            color: var(--traffic-red);
+            border-color: var(--traffic-red);
         }
         
         .fastest-badge {
@@ -584,28 +488,15 @@
             top: 8px;
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(45deg, var(--green-light), var(--signal-yellow));
+            background: var(--green-light);
             color: var(--charcoal-black);
             padding: 6px 16px;
-            border-radius: 20px;
+            border-radius: 12px;
             font-size: 0.75em;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            animation: pulse 2s infinite;
             z-index: 10;
-            box-shadow: 0 2px 10px rgba(33, 191, 115, 0.4);
-        }
-        
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.8;
-                transform: scale(1.05);
-            }
         }
         
         /* Time-based predictions grid */
@@ -805,13 +696,13 @@
             let html = `
                 <div class="result-card optimal-recommendation">
                     <h3 style="color: var(--green-light); font-size: 1.5em; text-transform: uppercase; letter-spacing: 1px;">🎯 OPTIMAL RECOMMENDATION</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px; position: relative; z-index: 2;">
-                        <div style="padding: 25px; background: rgba(33, 191, 115, 0.2); border-radius: 15px; border: 2px solid var(--green-light); box-shadow: 0 8px 25px rgba(33, 191, 115, 0.3);">
-                            <h4 style="color: var(--green-light); margin-bottom: 15px; font-size: 1.2em; font-weight: 700;">⚡ FASTEST ROUTE</h4>
-                            <div style="font-size: 1.4em; font-weight: 800; color: var(--tech-gray); margin-bottom: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${fastestRoute.name}</div>
-                            <div style="font-size: 1.2em; color: var(--green-light); font-weight: 700; background: rgba(33, 191, 115, 0.1); padding: 8px 15px; border-radius: 8px; margin-bottom: 10px;">Duration: ${formatDuration(fastestRoute.weather_adjusted_duration)}</div>
-                            <div style="color: rgba(224, 224, 224, 0.9); margin-top: 10px; font-weight: 600;">📏 Distance: ${fastestRoute.distance.toFixed(1)} km</div>
-                            ${fastestRoute.traffic_delay ? `<div style="color: var(--signal-yellow); margin-top: 10px; font-weight: 600;">⏱️ Traffic Delay: ${formatDuration(fastestRoute.traffic_delay)}</div>` : ''}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                        <div style="padding: 20px; background: rgba(33, 191, 115, 0.1); border-radius: 8px; border: 1px solid var(--green-light);">
+                            <h4 style="color: var(--green-light); margin-bottom: 12px; font-size: 1.1em; font-weight: 600;">⚡ FASTEST ROUTE</h4>
+                            <div style="font-size: 1.2em; font-weight: 700; color: var(--tech-gray); margin-bottom: 10px;">${fastestRoute.name}</div>
+                            <div style="color: var(--green-light); font-weight: 600; margin-bottom: 8px;">Duration: ${formatDuration(fastestRoute.weather_adjusted_duration)}</div>
+                            <div style="color: var(--tech-gray); opacity: 0.8; font-size: 0.9em;">📏 Distance: ${fastestRoute.distance.toFixed(1)} km</div>
+                            ${fastestRoute.traffic_delay ? `<div style="color: var(--signal-yellow); font-size: 0.9em; margin-top: 5px;">⏱️ Delay: ${formatDuration(fastestRoute.traffic_delay)}</div>` : ''}
                         </div>`;
             
             if (bestTime) {
@@ -819,12 +710,12 @@
                 const bestTimeDuration = formatDuration(parseFloat(bestTime.weather_adjusted_duration));
                 
                 html += `
-                        <div style="padding: 25px; background: rgba(255, 210, 63, 0.2); border-radius: 15px; border: 2px solid var(--signal-yellow); box-shadow: 0 8px 25px rgba(255, 210, 63, 0.3);">
-                            <h4 style="color: var(--signal-yellow); margin-bottom: 15px; font-size: 1.2em; font-weight: 700;">⏰ OPTIMAL DEPARTURE</h4>
-                            <div style="font-size: 1.4em; font-weight: 800; color: var(--tech-gray); margin-bottom: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${bestTime.time}</div>
-                            <div style="font-size: 1.2em; color: var(--signal-yellow); font-weight: 700; background: rgba(255, 210, 63, 0.1); padding: 8px 15px; border-radius: 8px; margin-bottom: 10px;">🚀 Leave at: ${bestTime.departure_time}</div>
-                            <div style="color: rgba(224, 224, 224, 0.9); margin-top: 10px; font-weight: 600;">⏱️ Duration: ${bestTimeDuration}</div>
-                            <div style="color: var(--green-light); font-weight: 700; margin-top: 10px; font-size: 1.1em;">🎯 ETA: ${bestTimeETA}</div>
+                        <div style="padding: 20px; background: rgba(255, 210, 63, 0.1); border-radius: 8px; border: 1px solid var(--signal-yellow);">
+                            <h4 style="color: var(--signal-yellow); margin-bottom: 12px; font-size: 1.1em; font-weight: 600;">⏰ OPTIMAL DEPARTURE</h4>
+                            <div style="font-size: 1.2em; font-weight: 700; color: var(--tech-gray); margin-bottom: 10px;">${bestTime.time}</div>
+                            <div style="color: var(--signal-yellow); font-weight: 600; margin-bottom: 8px;">🚀 Leave at: ${bestTime.departure_time}</div>
+                            <div style="color: var(--tech-gray); opacity: 0.8; font-size: 0.9em;">⏱️ Duration: ${bestTimeDuration}</div>
+                            <div style="color: var(--green-light); font-weight: 600; margin-top: 5px; font-size: 0.95em;">🎯 ETA: ${bestTimeETA}</div>
                         </div>`;
             }
             
@@ -879,12 +770,29 @@
                 
                 <div class="result-card weather-card">
                     <h3>🌤️ Weather Impact Analysis</h3>
-                    <p><strong>Current Conditions:</strong> ${data.weather_impact.conditions}</p>
-                    <p><strong>Temperature:</strong> ${data.weather_impact.temperature}</p>
-                    <p><strong>Traffic Impact:</strong> ${data.weather_impact.impact}</p>
-                    <p><strong>Wind Speed:</strong> ${data.weather_impact.wind_speed}</p>
-                    <p><strong>Visibility:</strong> ${data.weather_impact.visibility}</p>
-                    ${data.weather_impact.factors.length > 0 ? `<p><strong>Impact Factors:</strong> ${data.weather_impact.factors.join(', ')}</p>` : ''}
+                    <div class="weather-grid">
+                        <div class="weather-item">
+                            <div class="weather-label">Current Conditions</div>
+                            <div class="weather-value">${data.weather_impact.conditions}</div>
+                        </div>
+                        <div class="weather-item">
+                            <div class="weather-label">Temperature</div>
+                            <div class="weather-value">${data.weather_impact.temperature}</div>
+                        </div>
+                        <div class="weather-item">
+                            <div class="weather-label">Wind Speed</div>
+                            <div class="weather-value">${data.weather_impact.wind_speed}</div>
+                        </div>
+                        <div class="weather-item">
+                            <div class="weather-label">Visibility</div>
+                            <div class="weather-value">${data.weather_impact.visibility}</div>
+                        </div>
+                    </div>
+                    <div class="weather-impact ${data.weather_impact.impact.includes('🔴') ? 'high' : data.weather_impact.impact.includes('🟡') ? 'medium' : 'low'}">
+                        <div class="weather-label">Traffic Impact</div>
+                        <div style="color: var(--tech-gray); font-weight: 600; margin-bottom: 8px;">${data.weather_impact.impact}</div>
+                        ${data.weather_impact.factors.length > 0 ? `<div style="font-size: 0.9em; opacity: 0.8;">Impact Factors: ${data.weather_impact.factors.join(', ')}</div>` : ''}
+                    </div>
                 </div>
                 
                 <div class="result-card">
