@@ -609,7 +609,7 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <h1 class="sidebar-title">
-                    🗺️ Live Traffic Heatmap
+                    Live Traffic Heatmap
                 </h1>
                 <p class="sidebar-subtitle">
                     Real-time traffic conditions across Pune metropolitan area
@@ -715,6 +715,15 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
+        // Check authentication status
+        document.addEventListener('DOMContentLoaded', function() {
+            const isAuthenticated = sessionStorage.getItem('isAuthenticated');
+            if (!isAuthenticated) {
+                window.location.href = '/';
+                return;
+            }
+        });
+
         // Traffic Heatmap Manager
         class TrafficHeatmapManager {
             constructor() {
@@ -1155,10 +1164,10 @@
                 button.classList.toggle('active');
                 
                 if (button.classList.contains('active')) {
-                    button.innerHTML = '<span>Traffic Heatmap</span><span>🌡️</span>';
+                    button.innerHTML = '<span>Hide Heatmap</span>';
                     this.updateHeatmap();
                 } else {
-                    button.innerHTML = '<span>Show Heatmap</span><span>🗺️</span>';
+                    button.innerHTML = '<span>Show Heatmap</span>';
                     // Clear heatmap layers
                     this.map.eachLayer((layer) => {
                         if (layer instanceof L.Circle) {
@@ -1258,9 +1267,9 @@
                 
                 // Update toggle button icon
                 if (sidebar.classList.contains('hidden')) {
-                    toggleBtn.textContent = '📊';
+                    toggleBtn.textContent = '☰';
                 } else {
-                    toggleBtn.textContent = '✖️';
+                    toggleBtn.textContent = '✕';
                 }
             });
         }

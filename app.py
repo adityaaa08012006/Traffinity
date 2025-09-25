@@ -537,23 +537,19 @@ def monitor_route_conditions(origin_lat, origin_lon, dest_lat, dest_lon, session
 
 @app.route('/')
 def index():
+    """Serve the authentication page as the landing page"""
+    return render_template('auth.html')
+
+@app.route('/home')
+@app.route('/main')
+def main():
     """Serve the main dashboard with route risk analysis option"""
     return render_template('main.html')
 
 @app.route('/auth')
 def auth():
-    """Serve the authentication page"""
+    """Serve the authentication page (legacy route for backward compatibility)"""
     return render_template('auth.html')
-
-@app.route('/home')
-def home():
-    """Serve the main homepage after login"""
-    return render_template('main.html')
-
-@app.route('/main')
-def main():
-    """Legacy route - redirect to home"""
-    return redirect('/home')
 
 @app.route('/prediction')
 def prediction():

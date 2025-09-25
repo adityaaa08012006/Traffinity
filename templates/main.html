@@ -699,9 +699,9 @@
                 <button class="mobile-menu-btn" id="mobileMenuBtn">
                     ☰
                 </button>
-                <a href="/auth" class="btn-outline">
-                    👤 Account
-                </a>
+                <button onclick="handleLogout()" class="btn-outline">
+                    Logout
+                </button>
             </div>
         </div>
     </nav>
@@ -709,15 +709,15 @@
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
         <ul class="mobile-nav-links">
-            <li><a href="/home">🏠 Home</a></li>
-            <li><a href="/prediction">🔮 Predictions</a></li>
-            <li><a href="/route-risk-analysis">📊 Risk Analysis</a></li>
-            <li><a href="/monitoring">📡 Monitoring</a></li>
-            <li><a href="/events">🎪 Events</a></li>
-            <li><a href="/heatmap">🌡️ Heatmap</a></li>
-            <li><a href="/signalguiding">🚦 Signal Guiding</a></li>
-            <li><a href="/petrolpump">⛽ Petrol Pump Comparison</a></li>
-            <li><a href="#contact">📞 Contact</a></li>
+            <li><a href="/home">Home</a></li>
+            <li><a href="/prediction">Predictions</a></li>
+            <li><a href="/route-risk-analysis">Risk Analysis</a></li>
+            <li><a href="/monitoring">Monitoring</a></li>
+            <li><a href="/events">Events</a></li>
+            <li><a href="/heatmap">Heatmap</a></li>
+            <li><a href="/signalguiding">Signal Guiding</a></li>
+            <li><a href="/petrolpump">Petrol Pump Comparison</a></li>
+            <li><a href="#contact">Contact</a></li>
         </ul>
     </div>
 
@@ -728,10 +728,10 @@
             <p>Predict traffic patterns, optimize routes, and save time with AI-powered traffic analysis. Get real-time insights and weather-adjusted predictions.</p>
             <div class="cta-buttons">
                 <a href="#route-input" class="btn-primary">
-                    🚀 Start Prediction
+                    Start Prediction
                 </a>
                 <a href="#features" class="btn-primary">
-                    � Why Choose Us
+                    Why Choose Us
                 </a>
             </div>
         </div>
@@ -766,7 +766,7 @@
                 </div>
                 
                 <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
-                    ⚡ <span class="btn-text">Analyze Traffic</span>
+                    <span class="btn-text">Analyze Traffic</span>
                     <div class="loading"></div>
                 </button>
             </form>
@@ -923,6 +923,15 @@
     </footer>
 
     <script>
+        // Check authentication status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const isAuthenticated = sessionStorage.getItem('isAuthenticated');
+            if (!isAuthenticated) {
+                window.location.href = '/';
+                return;
+            }
+        });
+
         // Autocomplete functionality
         class AutoComplete {
             constructor(inputElement, dropdownElement) {
@@ -1313,6 +1322,17 @@
                 });
             }
         });
+
+        // Logout functionality
+        function handleLogout() {
+            // Clear authentication data
+            sessionStorage.removeItem('isAuthenticated');
+            sessionStorage.removeItem('userEmail');
+            sessionStorage.removeItem('userName');
+            
+            // Redirect to login page
+            window.location.href = '/';
+        }
     </script>
 </body>
 </html>

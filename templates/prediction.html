@@ -644,7 +644,7 @@
     <div class="container">
         <div class="header">
             <a href="/" class="back-btn">← Back to Home</a>
-            <h1>🔮 Traffic Prediction</h1>
+            <h1> Traffic Prediction</h1>
             <p>Analyze traffic conditions with weather impact & route optimization</p>
         </div>
         
@@ -657,7 +657,7 @@
             </div>
             
             <button class="analyze-btn" onclick="predictTraffic()" id="analyzeBtn">
-                🚀 Analyze Traffic & Routes
+                 Analyze Traffic & Routes
             </button>
             
             <div id="results" class="results"></div>
@@ -665,8 +665,15 @@
     </div>
     
     <script>
-        // Load route information and auto-start prediction
+        // Check authentication status
         document.addEventListener('DOMContentLoaded', function() {
+            const isAuthenticated = sessionStorage.getItem('isAuthenticated');
+            if (!isAuthenticated) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Load route information and auto-start prediction
             const origin = sessionStorage.getItem('origin');
             const destination = sessionStorage.getItem('destination');
             
@@ -680,10 +687,7 @@
                                 <span class="route-location">${origin}</span>
                             </div>
                         </div>
-                        <div class="route-arrow">
-                            <div class="arrow-line"></div>
-                            <div class="arrow-head">➤</div>
-                        </div>
+
                         <div class="route-point to-point">
                             <div class="route-icon">🟢</div>
                             <div class="route-details">
@@ -827,7 +831,7 @@
                 </div>
                 
                 <div class="result-card">
-                    <h3>🗺️ All Route Options (Weather-Adjusted)</h3>
+                    <h3>All Route Options (Weather-Adjusted)</h3>
                     <div class="route-chart">
             `;
             
@@ -853,7 +857,7 @@
                             ${route.fuel_consumption ? `<span>Fuel: ${route.fuel_consumption.toFixed(2)}L</span>` : ''}
                         </div>
                         <button class="map-link" onclick="event.stopPropagation(); openRouteMap('${route.route_id || `route_${index}`}')">
-                            🗺️ View on Map
+                            View on Map
                         </button>
                     </div>
                 `;
@@ -872,7 +876,7 @@
                 </div>
                 
                 <div class="result-card weather-card">
-                    <h3>🌤️ Weather Impact Analysis</h3>
+                    <h3>Weather Impact Analysis</h3>
                     <div class="weather-grid">
                         <div class="weather-item">
                             <div class="weather-label">Current Conditions</div>
