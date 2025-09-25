@@ -808,6 +808,18 @@ def test_tomtom():
     """Serve the TomTom API test page"""
     return render_template('tomtom_test.html')
 
+@app.route('/test_autocomplete')
+def test_autocomplete():
+    """Serve the autocomplete test page"""
+    from flask import send_from_directory
+    return send_from_directory('.', 'test_autocomplete.html')
+
+@app.route('/debug_autocomplete')
+def debug_autocomplete():
+    """Serve the debug autocomplete page"""
+    from flask import send_from_directory
+    return send_from_directory('.', 'debug_autocomplete.html')
+
 @app.route('/test_tomtom_api')
 def test_tomtom_api():
     """Test if TomTom API is accessible"""
@@ -861,6 +873,504 @@ def geocode_endpoint():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+def preprocess_search_query(query):
+    """Preprocess search query to improve matching accuracy"""
+    try:
+        import re
+        
+        # Basic validation
+        if not query or not isinstance(query, str):
+            return ""
+        
+        # Convert to lowercase and strip
+        processed = query.lower().strip()
+        
+        if not processed:
+            return ""
+        
+        # Handle common abbreviations and patterns
+        abbreviations = {
+            'st ': 'street ',
+            'st.': 'street',
+            'ave ': 'avenue ',
+            'ave.': 'avenue',
+            'blvd ': 'boulevard ',
+            'blvd.': 'boulevard',
+            'dr ': 'drive ',
+            'dr.': 'drive',
+            'rd ': 'road ',
+            'rd.': 'road',
+            'ln ': 'lane ',
+            'ln.': 'lane',
+            'ct ': 'court ',
+            'ct.': 'court',
+            'pl ': 'place ',
+            'pl.': 'place',
+            ' ny ': ' new york ',
+            ' ny,': ' new york,',
+            ' ca ': ' california ',
+            ' ca,': ' california,',
+            ' fl ': ' florida ',
+            ' fl,': ' florida,',
+            ' tx ': ' texas ',
+            ' tx,': ' texas,',
+            'nyc': 'new york city',
+            'la ': 'los angeles ',
+            'sf ': 'san francisco ',
+        }
+        
+        # Apply abbreviation expansions with error handling
+        try:
+            for abbr, expansion in abbreviations.items():
+                if abbr and expansion:
+                    processed = processed.replace(abbr, expansion)
+        except Exception as abbr_error:
+            print(f"Error in abbreviation replacement: {abbr_error}")
+        
+        # Handle airport codes (3-letter codes in uppercase) with error handling
+        try:
+            airport_pattern = r'\b([A-Z]{3})\b'
+            if re.search(airport_pattern, query.upper()):
+                # For airport codes, also try searching with "airport" suffix
+                processed += ' airport'
+        except Exception as airport_error:
+            print(f"Error in airport code processing: {airport_error}")
+        
+        # Clean up extra spaces with error handling
+        try:
+            processed = re.sub(r'\s+', ' ', processed).strip()
+        except Exception as regex_error:
+            print(f"Error in regex cleanup: {regex_error}")
+            # Fallback: manual space cleanup
+            processed = ' '.join(processed.split())
+        
+        return processed
+        
+    except Exception as e:
+        print(f"Error in preprocess_search_query: {e}")
+        # Return original query if preprocessing fails
+        return query if isinstance(query, str) else ""
+
+def process_and_score_result(result, query):
+    """Process a TomTom search result and calculate relevance score"""
+    try:
+        # Validate input parameters
+        if not result or not isinstance(result, dict):
+            print(f"Invalid result object: {type(result)}")
+            return None
+        
+        if not query or not isinstance(query, str):
+            print(f"Invalid query: {query}")
+            return None
+            
+        address = result.get('address', {})
+        position = result.get('position', {})
+        poi = result.get('poi', {})
+        
+        # Validate required position data
+        lat = position.get('lat')
+        lon = position.get('lon')
+        if not lat or not lon:
+            print(f"Missing coordinates in result")
+            return None
+        
+        # Safely extract address components with type validation
+        street = str(address.get('streetName', '')) if address.get('streetName') else ''
+        building = str(address.get('buildingNumber', '')) if address.get('buildingNumber') else ''
+        municipality = str(address.get('municipality', '')) if address.get('municipality') else ''
+        country_subdivision = str(address.get('countrySubdivision', '')) if address.get('countrySubdivision') else ''
+        country = str(address.get('country', '')) if address.get('country') else ''
+        postal_code = str(address.get('postalCode', '')) if address.get('postalCode') else ''
+        
+        # POI information with safe extraction
+        poi_name = str(poi.get('name', '')) if poi.get('name') else ''
+        poi_categories = poi.get('categories', []) if isinstance(poi.get('categories'), list) else []
+        
+        # Calculate relevance score
+        score = 0
+        query_lower = query.lower() if query else ''
+        
+        # Safely check string matches
+        try:
+            # Exact name match gets highest score
+            if poi_name and poi_name.lower() == query_lower:
+                score += 100
+            elif poi_name and query_lower and query_lower in poi_name.lower():
+                score += 80
+            
+            # Municipality/city match
+            if municipality and query_lower and query_lower in municipality.lower():
+                score += 60
+            elif municipality and municipality.lower() == query_lower:
+                score += 90
+                
+            # Street name match
+            if street and query_lower and query_lower in street.lower():
+                score += 40
+                
+            # Country subdivision (state/province) match
+            if country_subdivision and query_lower and query_lower in country_subdivision.lower():
+                score += 30
+                
+            # Country match (lower priority for traffic app)
+            if country and query_lower and query_lower in country.lower():
+                score += 10
+        except Exception as scoring_error:
+            print(f"Error in scoring matches: {scoring_error}")
+            score = 10  # Default minimal score
+            
+        # Category-based scoring (prioritize transportation-related)
+        try:
+            transportation_categories = [
+                'petrol_station', 'charging_station', 'airport', 'railway_station', 
+                'bus_station', 'ferry_terminal', 'parking', 'rest_area'
+            ]
+            
+            for category in poi_categories:
+                if isinstance(category, str):
+                    category_lower = category.lower()
+                    if any(trans_cat in category_lower for trans_cat in transportation_categories):
+                        score += 25
+                    else:
+                        score += 5  # General POI bonus
+        except Exception as category_error:
+            print(f"Error in category scoring: {category_error}")
+        
+        # Address completeness bonus
+        try:
+            address_components = [street, municipality, country_subdivision, country]
+            complete_components = sum(1 for comp in address_components if comp and comp.strip())
+            score += complete_components * 2
+        except Exception as completeness_error:
+            print(f"Error in completeness scoring: {completeness_error}")
+        
+        # Prefer results with coordinates
+        try:
+            if lat and lon and isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+                score += 10
+        except Exception as coord_error:
+            print(f"Error in coordinate validation: {coord_error}")
+            
+        # Build formatted address with priority order
+        address_parts = []
+        
+        try:
+            # Add POI name first if available and relevant
+            if poi_name and score >= 40:  # Only show POI name if it's relevant
+                address_parts.append(poi_name)
+                
+            # Add street address
+            if street:
+                street_addr = f"{building} {street}".strip() if building else street
+                if street_addr.strip():
+                    address_parts.append(street_addr)
+                
+            # Add municipality (city)
+            if municipality:
+                address_parts.append(municipality)
+                
+            # Add state/province for clarity
+            if country_subdivision and country_subdivision != municipality:
+                address_parts.append(country_subdivision)
+                
+            # Add country for international results
+            if country:
+                address_parts.append(country)
+            
+            # Fallback to freeform address if no structured address
+            if not address_parts:
+                freeform = str(address.get('freeformAddress', '')) if address.get('freeformAddress') else ''
+                if freeform.strip():
+                    address_parts = [freeform]
+                else:
+                    print(f"No usable address found in result")
+                    return None  # Skip results without usable address
+            
+            formatted_address = ', '.join(filter(None, address_parts))
+            if not formatted_address.strip():
+                print(f"Empty formatted address")
+                return None
+                
+        except Exception as format_error:
+            print(f"Error formatting address: {format_error}")
+            return None
+        
+        # Create display text with enhanced formatting
+        try:
+            display_text = formatted_address
+            if poi_name and poi_name not in formatted_address:
+                display_text = f"{poi_name} - {formatted_address}"
+        except Exception as display_error:
+            print(f"Error creating display text: {display_error}")
+            display_text = formatted_address
+            
+        # Determine category for icon
+        category = 'address'
+        try:
+            if poi_categories and isinstance(poi_categories, list):
+                category_text = ' '.join(str(cat).lower() for cat in poi_categories)
+                if 'airport' in category_text:
+                    category = 'airport'
+                elif 'railway' in category_text or 'train' in category_text:
+                    category = 'railway'
+                elif 'petrol' in category_text or 'gas' in category_text or 'fuel' in category_text:
+                    category = 'petrol_station'
+                elif 'charging' in category_text:
+                    category = 'charging_station'
+                elif 'parking' in category_text:
+                    category = 'parking'
+                elif 'hospital' in category_text or 'medical' in category_text:
+                    category = 'hospital'
+                elif 'school' in category_text or 'university' in category_text:
+                    category = 'education'
+                elif 'restaurant' in category_text or 'food' in category_text:
+                    category = 'restaurant'
+                elif 'hotel' in category_text or 'accommodation' in category_text:
+                    category = 'hotel'
+                else:
+                    category = 'poi'
+        except Exception as icon_error:
+            print(f"Error determining category: {icon_error}")
+            category = 'address'
+        
+        # Final validation before returning
+        try:
+            result_obj = {
+                'text': str(formatted_address),
+                'display_text': str(display_text),
+                'lat': float(lat),
+                'lon': float(lon),
+                'category': str(category),
+                'score': int(score),
+                'poi_name': str(poi_name),
+                'address_components': {
+                    'street': str(street),
+                    'municipality': str(municipality),
+                    'country_subdivision': str(country_subdivision),
+                    'country': str(country),
+                    'postal_code': str(postal_code)
+                }
+            }
+            return result_obj
+        except Exception as final_error:
+            print(f"Error creating final result object: {final_error}")
+            return None
+        
+    except Exception as e:
+        print(f"Unexpected error processing result: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return None
+
+@app.route('/suggest_locations', methods=['GET'])
+def suggest_locations():
+    """Get location suggestions using TomTom Search API with enhanced relevance"""
+    try:
+        # Safely extract and validate parameters
+        query = request.args.get('q', '').strip()
+        
+        # Validate limit parameter
+        try:
+            limit = min(int(request.args.get('limit', 5)), 10)  # Max 10 suggestions
+        except (ValueError, TypeError):
+            limit = 5
+            
+        user_lat = request.args.get('lat')  # Optional user location for bias
+        user_lon = request.args.get('lon')
+        
+        # Basic validation
+        if not query or len(query) < 2:
+            return jsonify({"suggestions": []})
+        
+        # Additional query validation
+        if len(query) > 200:  # Prevent extremely long queries
+            query = query[:200]
+            
+        print(f"🔍 Processing autocomplete query: '{query}' (limit: {limit})")
+        
+        # Preprocess query for better matching with error handling
+        try:
+            processed_query = preprocess_search_query(query)
+            if not processed_query or not processed_query.strip():
+                processed_query = query  # Fallback to original query
+        except Exception as preprocess_error:
+            print(f"Query preprocessing error: {preprocess_error}")
+            processed_query = query  # Fallback to original query
+        
+        # URL encode the processed query to prevent issues with special characters
+        try:
+            import urllib.parse
+            encoded_query = urllib.parse.quote(processed_query, safe='')
+        except Exception as encoding_error:
+            print(f"Query encoding error: {encoding_error}")
+            encoded_query = processed_query
+        
+        # Use TomTom's fuzzy search for location suggestions with optimized parameters
+        url = f"https://api.tomtom.com/search/2/search/{encoded_query}.json"
+        params = {
+            "key": API_KEY,
+            "limit": min(limit * 2, 20),  # Get more results to filter and rank better
+            "typeahead": "true",  # Enable typeahead mode for better suggestions
+            "minFuzzyLevel": 1,
+            "maxFuzzyLevel": 2,
+            "idxSet": "POI,Addr,Geo",  # Include POI, Address, and Geographic locations
+        }
+        
+        # Add geographic bias if user location is provided
+        if user_lat and user_lon:
+            try:
+                lat_float = float(user_lat)
+                lon_float = float(user_lon)
+                # Validate coordinate ranges
+                if -90 <= lat_float <= 90 and -180 <= lon_float <= 180:
+                    params["lat"] = lat_float
+                    params["lon"] = lon_float
+                    params["radius"] = 50000  # 50km radius
+                else:
+                    print(f"Invalid coordinates: lat={lat_float}, lon={lon_float}")
+            except (ValueError, TypeError) as coord_error:
+                print(f"Coordinate parsing error: {coord_error}")
+        
+        print(f"🌐 Making TomTom API request: {url}")
+        
+        # Make API request with enhanced error handling
+        try:
+            response = requests.get(url, params=params, timeout=5)
+            response.raise_for_status()
+            
+            if response.status_code != 200:
+                print(f"API returned status {response.status_code}")
+                return jsonify({"suggestions": [], "error": f"API returned status {response.status_code}"}), 500
+                
+        except requests.exceptions.Timeout:
+            print(f"⏱️ API request timeout for query: {query}")
+            return jsonify({"suggestions": [], "error": "Request timeout"}), 408
+        except requests.exceptions.HTTPError as http_error:
+            print(f"🚫 HTTP error for query '{query}': {http_error}")
+            return jsonify({"suggestions": [], "error": f"API HTTP error: {str(http_error)}"}), 500
+        except requests.exceptions.RequestException as req_error:
+            print(f"🚫 Request error for query '{query}': {req_error}")
+            return jsonify({"suggestions": [], "error": f"API request error: {str(req_error)}"}), 500
+        
+        # Parse JSON response safely
+        try:
+            data = response.json()
+        except ValueError as json_error:
+            print(f"JSON parsing error: {json_error}")
+            return jsonify({"suggestions": [], "error": "Invalid API response format"}), 500
+        
+        # Validate API response structure
+        if not isinstance(data, dict):
+            print(f"Invalid API response type: {type(data)}")
+            return jsonify({"suggestions": [], "error": "Invalid API response structure"}), 500
+            
+        results = data.get('results', [])
+        if not isinstance(results, list):
+            print(f"Invalid results type: {type(results)}")
+            results = []
+        
+        print(f"📍 API returned {len(results)} raw results")
+        
+        # Process and rank results for better relevance
+        processed_results = []
+        processing_errors = 0
+        
+        for i, result in enumerate(results):
+            try:
+                processed_result = process_and_score_result(result, query)
+                if processed_result:
+                    processed_results.append(processed_result)
+                else:
+                    processing_errors += 1
+            except Exception as process_error:
+                print(f"Error processing result {i}: {process_error}")
+                processing_errors += 1
+                continue
+        
+        if processing_errors > 0:
+            print(f"⚠️ {processing_errors} results failed processing")
+        
+        print(f"✅ Successfully processed {len(processed_results)} results")
+        
+        # Sort by relevance score (descending) with error handling
+        try:
+            processed_results.sort(key=lambda x: x.get('score', 0), reverse=True)
+        except Exception as sort_error:
+            print(f"Error sorting results: {sort_error}")
+            # Continue with unsorted results
+        
+        # Take only the requested limit and remove duplicates
+        unique_suggestions = []
+        seen_locations = set()
+        dedup_errors = 0
+        
+        for result in processed_results:
+            try:
+                # Create a location key for duplicate detection with safe access
+                lat = result.get('lat', 0)
+                lon = result.get('lon', 0)
+                text = result.get('text', '')
+                
+                if not lat or not lon or not text:
+                    dedup_errors += 1
+                    continue
+                    
+                location_key = f"{lat:.4f},{lon:.4f}"
+                text_key = text.lower()
+                
+                # Skip if we've seen this location or very similar text
+                similar_text_found = False
+                try:
+                    for existing in unique_suggestions:
+                        existing_text = existing.get('text', '').lower()
+                        if text_key in existing_text or existing_text in text_key:
+                            similar_text_found = True
+                            break
+                except Exception:
+                    pass  # Continue if comparison fails
+                
+                if location_key not in seen_locations and not similar_text_found:
+                    seen_locations.add(location_key)
+                    
+                    # Create safe suggestion object
+                    suggestion = {
+                        'text': str(result.get('text', '')),
+                        'display_text': str(result.get('display_text', result.get('text', ''))),
+                        'lat': float(result.get('lat', 0)),
+                        'lon': float(result.get('lon', 0)),
+                        'category': str(result.get('category', 'address')),
+                        'relevance_score': int(result.get('score', 0))
+                    }
+                    
+                    unique_suggestions.append(suggestion)
+                    
+                    if len(unique_suggestions) >= limit:
+                        break
+            except Exception as dedup_error:
+                print(f"Error in deduplication: {dedup_error}")
+                dedup_errors += 1
+                continue
+        
+        if dedup_errors > 0:
+            print(f"⚠️ {dedup_errors} results failed deduplication")
+        
+        print(f"🎯 Returning {len(unique_suggestions)} unique suggestions")
+        
+        return jsonify({"suggestions": unique_suggestions})
+        
+    except Exception as e:
+        # Catch-all error handler with detailed logging
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"🚨 Unexpected error in suggest_locations: {e}")
+        print(f"Traceback: {error_details}")
+        
+        # Return a safe error response
+        return jsonify({
+            "suggestions": [], 
+            "error": f"Internal server error: {str(e)}"
+        }), 500
 
 @socketio.on('connect')
 def handle_connect():

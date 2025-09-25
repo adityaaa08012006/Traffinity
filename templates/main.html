@@ -251,6 +251,89 @@
             color: rgba(224, 224, 224, 0.5);
         }
 
+        /* Autocomplete Styling */
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(28, 28, 28, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--tech-gray);
+            border-bottom: 1px solid rgba(224, 224, 224, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: var(--glass-bg);
+            color: var(--signal-yellow);
+        }
+
+        .autocomplete-item:active {
+            background: rgba(255, 210, 63, 0.2);
+            transform: scale(0.98);
+        }
+
+        .autocomplete-item-icon {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .autocomplete-item-text {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .autocomplete-loading {
+            padding: 0.75rem 1rem;
+            color: var(--tech-gray);
+            opacity: 0.7;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .autocomplete-no-results {
+            padding: 0.75rem 1rem;
+            color: var(--tech-gray);
+            opacity: 0.7;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
         /* Features Section */
         .features {
             padding: 4rem 2rem;
@@ -506,14 +589,20 @@
                     <label class="form-label">
                         📍 Origin
                     </label>
-                    <input type="text" class="form-input" id="origin" placeholder="Enter starting location" required>
+                    <div class="autocomplete-container">
+                        <input type="text" class="form-input autocomplete-input" id="origin" placeholder="Enter starting location" required autocomplete="off">
+                        <div class="autocomplete-dropdown" id="origin-dropdown"></div>
+                    </div>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">
                         🏁 Destination
                     </label>
-                    <input type="text" class="form-input" id="destination" placeholder="Enter destination" required>
+                    <div class="autocomplete-container">
+                        <input type="text" class="form-input autocomplete-input" id="destination" placeholder="Enter destination" required autocomplete="off">
+                        <div class="autocomplete-dropdown" id="destination-dropdown"></div>
+                    </div>
                 </div>
                 
                 <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
@@ -641,8 +730,277 @@
     </footer>
 
     <script>
+        // Autocomplete functionality
+        class AutoComplete {
+            constructor(inputElement, dropdownElement) {
+                this.input = inputElement;
+                this.dropdown = dropdownElement;
+                this.suggestions = [];
+                this.selectedIndex = -1;
+                this.isLoading = false;
+                this.debounceTimer = null;
+                this.isClickingOnDropdown = false;
+                this.userLocation = null; // Cache user location for better local results
+                
+                this.bindEvents();
+            }
+            
+            bindEvents() {
+                // Input events
+                this.input.addEventListener('input', (e) => {
+                    this.handleInput(e.target.value);
+                });
+                
+                this.input.addEventListener('focus', () => {
+                    if (this.suggestions.length > 0) {
+                        this.showDropdown();
+                    }
+                });
+                
+                this.input.addEventListener('blur', (e) => {
+                    // Delay hiding to allow clicking on suggestions
+                    setTimeout(() => {
+                        if (!this.isClickingOnDropdown) {
+                            this.hideDropdown();
+                        }
+                        this.isClickingOnDropdown = false;
+                    }, 200);
+                });
+                
+                // Keyboard navigation
+                this.input.addEventListener('keydown', (e) => {
+                    this.handleKeydown(e);
+                });
+                
+                // Click outside to close
+                document.addEventListener('click', (e) => {
+                    if (!this.input.contains(e.target) && !this.dropdown.contains(e.target)) {
+                        this.hideDropdown();
+                    }
+                });
+                
+                // Prevent blur when clicking on dropdown
+                this.dropdown.addEventListener('mousedown', (e) => {
+                    e.preventDefault(); // Prevent input blur
+                    this.isClickingOnDropdown = true;
+                });
+            }
+            
+            handleInput(value) {
+                const query = value.trim();
+                
+                // Clear previous timer
+                if (this.debounceTimer) {
+                    clearTimeout(this.debounceTimer);
+                }
+                
+                if (query.length < 2) {
+                    this.hideDropdown();
+                    return;
+                }
+                
+                // Debounce API calls
+                this.debounceTimer = setTimeout(() => {
+                    this.fetchSuggestions(query);
+                }, 300);
+            }
+            
+            async fetchSuggestions(query) {
+                if (this.isLoading) return;
+                
+                this.isLoading = true;
+                this.showLoading();
+                
+                try {
+                    // Build URL with optional user location for geographic bias
+                    let url = `/suggest_locations?q=${encodeURIComponent(query)}&limit=5`;
+                    
+                    // Try to get user location for better local results
+                    if (navigator.geolocation && !this.userLocation) {
+                        try {
+                            const position = await new Promise((resolve, reject) => {
+                                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                                    timeout: 5000,
+                                    maximumAge: 300000 // 5 minutes cache
+                                });
+                            });
+                            this.userLocation = {
+                                lat: position.coords.latitude,
+                                lon: position.coords.longitude
+                            };
+                        } catch (e) {
+                            // Geolocation failed, continue without it
+                            console.log('Geolocation not available or denied');
+                        }
+                    }
+                    
+                    // Add user location to request if available
+                    if (this.userLocation) {
+                        url += `&lat=${this.userLocation.lat}&lon=${this.userLocation.lon}`;
+                    }
+                    
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.suggestions = data.suggestions || [];
+                        this.displaySuggestions();
+                    } else {
+                        this.showError('Failed to load suggestions');
+                    }
+                } catch (error) {
+                    console.error('Autocomplete error:', error);
+                    this.showError('Network error');
+                } finally {
+                    this.isLoading = false;
+                }
+            }
+            
+            displaySuggestions() {
+                this.dropdown.innerHTML = '';
+                
+                if (this.suggestions.length === 0) {
+                    const noResults = document.createElement('div');
+                    noResults.className = 'autocomplete-no-results';
+                    noResults.textContent = 'No locations found';
+                    this.dropdown.appendChild(noResults);
+                    this.showDropdown();
+                    return;
+                }
+                
+                this.suggestions.forEach((suggestion, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.dataset.index = index;
+                    
+                    // Enhanced icon mapping based on category
+                    let icon = '📍';
+                    switch (suggestion.category) {
+                        case 'airport': icon = '✈️'; break;
+                        case 'railway': icon = '🚊'; break;
+                        case 'petrol_station': icon = '⛽'; break;
+                        case 'charging_station': icon = '🔌'; break;
+                        case 'parking': icon = '🅿️'; break;
+                        case 'hospital': icon = '🏥'; break;
+                        case 'education': icon = '🎓'; break;
+                        case 'restaurant': icon = '🍽️'; break;
+                        case 'hotel': icon = '🏨'; break;
+                        case 'poi': icon = '⭐'; break;
+                        default: icon = '📍'; break;
+                    }
+                    
+                    item.innerHTML = `
+                        <span class="autocomplete-item-icon">${icon}</span>
+                        <span class="autocomplete-item-text">${suggestion.display_text}</span>
+                    `;
+                    
+                    // Click handler - use mousedown for better responsiveness
+                    item.addEventListener('mousedown', (e) => {
+                        e.preventDefault(); // Prevent input blur
+                        this.selectSuggestion(index);
+                    });
+                    
+                    // Also handle click as fallback
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.selectSuggestion(index);
+                    });
+                    
+                    this.dropdown.appendChild(item);
+                });
+                
+                this.selectedIndex = -1;
+                this.showDropdown();
+            }
+            
+            showLoading() {
+                this.dropdown.innerHTML = '<div class="autocomplete-loading">🔍 Searching...</div>';
+                this.showDropdown();
+            }
+            
+            showError(message) {
+                this.dropdown.innerHTML = `<div class="autocomplete-no-results">⚠️ ${message}</div>`;
+                this.showDropdown();
+            }
+            
+            showDropdown() {
+                this.dropdown.classList.add('show');
+            }
+            
+            hideDropdown() {
+                this.dropdown.classList.remove('show');
+                this.selectedIndex = -1;
+            }
+            
+            selectSuggestion(index) {
+                console.log('Selecting suggestion:', index, this.suggestions[index]);
+                const suggestion = this.suggestions[index];
+                if (suggestion) {
+                    this.input.value = suggestion.text;
+                    this.input.dataset.lat = suggestion.lat;
+                    this.input.dataset.lon = suggestion.lon;
+                    this.hideDropdown();
+                    
+                    // Trigger input event for validation
+                    this.input.dispatchEvent(new Event('input'));
+                    console.log('Selection complete:', this.input.value);
+                }
+            }
+            
+            handleKeydown(e) {
+                if (!this.dropdown.classList.contains('show')) return;
+                
+                const items = this.dropdown.querySelectorAll('.autocomplete-item');
+                
+                switch (e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        this.selectedIndex = Math.min(this.selectedIndex + 1, items.length - 1);
+                        this.updateSelection(items);
+                        break;
+                        
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        this.selectedIndex = Math.max(this.selectedIndex - 1, -1);
+                        this.updateSelection(items);
+                        break;
+                        
+                    case 'Enter':
+                        e.preventDefault();
+                        if (this.selectedIndex >= 0 && items[this.selectedIndex]) {
+                            this.selectSuggestion(this.selectedIndex);
+                        }
+                        break;
+                        
+                    case 'Escape':
+                        this.hideDropdown();
+                        break;
+                }
+            }
+            
+            updateSelection(items) {
+                items.forEach((item, index) => {
+                    item.classList.toggle('selected', index === this.selectedIndex);
+                });
+            }
+        }
+
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize autocomplete for both inputs
+            const originInput = document.getElementById('origin');
+            const originDropdown = document.getElementById('origin-dropdown');
+            const destinationInput = document.getElementById('destination');
+            const destinationDropdown = document.getElementById('destination-dropdown');
+            
+            if (originInput && originDropdown) {
+                new AutoComplete(originInput, originDropdown);
+            }
+            
+            if (destinationInput && destinationDropdown) {
+                new AutoComplete(destinationInput, destinationDropdown);
+            }
+            
             // Route form handling
             const routeForm = document.getElementById('routeForm');
             console.log('Route form element:', routeForm);
@@ -653,76 +1011,76 @@
                     e.preventDefault();
             
                     const origin = document.getElementById('origin').value.trim();
-            const destination = document.getElementById('destination').value.trim();
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const btnText = submitBtn.querySelector('.btn-text');
-            const loading = submitBtn.querySelector('.loading');
-            
-            if (!origin || !destination) {
-                showMessage('Please enter both origin and destination', 'error');
-                return;
-            }
-            
-            // Show loading state
-            submitBtn.disabled = true;
-            btnText.style.display = 'none';
-            loading.style.display = 'block';
-            
-            try {
-                // Store locations for prediction page
-                sessionStorage.setItem('origin', origin);
-                sessionStorage.setItem('destination', destination);
-                
-                showMessage('Route saved! Redirecting to prediction analysis...', 'success');
-                
-                // Redirect to prediction page
-                setTimeout(() => {
-                    window.location.href = '/prediction';
-                }, 1000);
-                
-            } catch (error) {
-                showMessage('An error occurred. Please try again.', 'error');
-                console.error('Error:', error);
-            } finally {
-                // Reset button state after redirect or error
-                setTimeout(() => {
-                    submitBtn.disabled = false;
-                    btnText.style.display = 'inline';
-                    loading.style.display = 'none';
-                }, 1500);
-            }
-        });
-            
-            function showMessage(message, type) {
-            const container = document.getElementById('messageContainer');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            messageDiv.textContent = message;
-            
-            container.innerHTML = '';
-            container.appendChild(messageDiv);
-            messageDiv.style.display = 'block';
-            
-            if (type === 'success') {
-                setTimeout(() => {
-                    messageDiv.style.display = 'none';
-                }, 3000);
-            }
-        }
-        
-            // Smooth scrolling for anchor links
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
+                    const destination = document.getElementById('destination').value.trim();
+                    const submitBtn = e.target.querySelector('button[type="submit"]');
+                    const btnText = submitBtn.querySelector('.btn-text');
+                    const loading = submitBtn.querySelector('.loading');
+                    
+                    if (!origin || !destination) {
+                        showMessage('Please enter both origin and destination', 'error');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    submitBtn.disabled = true;
+                    btnText.style.display = 'none';
+                    loading.style.display = 'block';
+                    
+                    try {
+                        // Store locations for prediction page
+                        sessionStorage.setItem('origin', origin);
+                        sessionStorage.setItem('destination', destination);
+                        
+                        showMessage('Route saved! Redirecting to prediction analysis...', 'success');
+                        
+                        // Redirect to prediction page
+                        setTimeout(() => {
+                            window.location.href = '/prediction';
+                        }, 1000);
+                        
+                    } catch (error) {
+                        showMessage('An error occurred. Please try again.', 'error');
+                        console.error('Error:', error);
+                    } finally {
+                        // Reset button state after redirect or error
+                        setTimeout(() => {
+                            submitBtn.disabled = false;
+                            btnText.style.display = 'inline';
+                            loading.style.display = 'none';
+                        }, 1500);
                     }
                 });
-            });
+                
+                function showMessage(message, type) {
+                    const container = document.getElementById('messageContainer');
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${type}`;
+                    messageDiv.textContent = message;
+                    
+                    container.innerHTML = '';
+                    container.appendChild(messageDiv);
+                    messageDiv.style.display = 'block';
+                    
+                    if (type === 'success') {
+                        setTimeout(() => {
+                            messageDiv.style.display = 'none';
+                        }, 3000);
+                    }
+                }
+            
+                // Smooth scrolling for anchor links
+                document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                    anchor.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const target = document.querySelector(this.getAttribute('href'));
+                        if (target) {
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    });
+                });
             } else {
                 console.error('Route form not found!');
             }
