@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffinity - Petrol Pump Queue Analyzer</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Petrol Pump Analyzer Specific Styles */
+        :root {
+            --charcoal-black: #1C1C1C;
+            --traffic-red: #D7263D;
+            --signal-yellow: #FFD23F;
+            --green-light: #21BF73;
+            --tech-gray: #E0E0E0;
+            --glass-bg: rgba(224, 224, 224, 0.05);
+            --glass-border: rgba(224, 224, 224, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--charcoal-black);
+            color: var(--tech-gray);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .app-header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .main-content {
+            padding: 3rem 0;
+        }
+
+        h1 {
+            color: var(--signal-yellow);
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.8;
+            text-align: center;
+            margin-bottom: 0;
+        }
+
+        .pumps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 3rem;
+            margin-bottom: 4rem;
+            justify-items: center;
+        }
+
+        .pump-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .pump-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--signal-yellow);
+            box-shadow: 0 15px 40px rgba(255, 210, 63, 0.15);
+        }
+
+        .pump-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .pump-header h3 {
+            color: var(--signal-yellow);
+            margin-bottom: 0.8rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .pump-address {
+            opacity: 0.8;
+            margin-bottom: 1.2rem;
+            font-size: 1rem;
+            color: var(--tech-gray);
+        }
+
+        .status {
+            padding: 0.7rem 1.5rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .status--info { 
+            background: linear-gradient(135deg, var(--signal-yellow), #ffd700); 
+            color: var(--charcoal-black); 
+        }
+        .status--success { 
+            background: linear-gradient(135deg, var(--green-light), #28d574); 
+            color: white; 
+        }
+        .status--warning { 
+            background: linear-gradient(135deg, var(--traffic-red), #e63946); 
+            color: white; 
+        }
+
+        .upload-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 250px;
+            border: 3px dashed var(--glass-border);
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(224, 224, 224, 0.02), rgba(224, 224, 224, 0.05));
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 1.5rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 210, 63, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .upload-area:hover::before {
+            opacity: 1;
+        }
+
+        .upload-area:hover {
+            border-color: var(--signal-yellow);
+            background: linear-gradient(135deg, rgba(255, 210, 63, 0.05), rgba(255, 210, 63, 0.1));
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(255, 210, 63, 0.2);
+        }
+
+        .upload-area.drag-over {
+            border-color: var(--green-light);
+            background: linear-gradient(135deg, rgba(33, 191, 115, 0.05), rgba(33, 191, 115, 0.1));
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(33, 191, 115, 0.3);
+        }
+
+        .upload-content {
+            text-align: center;
+            z-index: 2;
+            position: relative;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--tech-gray);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: var(--tech-gray);
+            opacity: 0.7;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .image-preview {
+            position: relative;
+            margin: 1.5rem 0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            background: var(--charcoal-black);
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 300px;
+            object-fit: contain;
+            border-radius: 16px;
+            background: var(--charcoal-black);
+            transition: transform 0.3s ease;
+        }
+
+        .image-preview:hover img {
+            transform: scale(1.02);
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--traffic-red);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(215, 38, 61, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-btn:hover {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+            transform: scale(1.1);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn--primary {
+            background: var(--signal-yellow);
+            color: var(--charcoal-black);
+        }
+
+        .btn--secondary {
+            background: var(--glass-bg);
+            color: var(--tech-gray);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(224, 224, 224, 0.03);
+            border-radius: 8px;
+        }
+
+        .metric-label {
+            display: block;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--signal-yellow);
+        }
+
+        .comparison-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .chart-container {
+            background: rgba(224, 224, 224, 0.03);
+            padding: 1.5rem;
+            border-radius: 12px;
+        }
+
+        .analyze-section {
+            text-align: center;
+            margin: 4rem 0;
+            padding: 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+        }
+
+        .navigation-section {
+            text-align: center;
+            margin: 3rem 0;
+            padding: 2rem;
+        }
+
+        .btn--lg {
+            padding: 1.2rem 3rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn--lg:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(28, 28, 28, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            padding: 3rem;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--glass-border);
+            border-top: 3px solid var(--signal-yellow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: var(--green-light);
+            color: white;
+        }
+
+        .notification.error {
+            background: var(--traffic-red);
+            color: white;
+        }
+
+        /* Responsive Design Improvements */
+        @media (max-width: 1200px) {
+            .container {
+                max-width: 1000px;
+                padding: 0 1.5rem;
+            }
+
+            .pumps-grid {
+                grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                gap: 2.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .app-header {
+                padding: 2rem 0;
+            }
+
+            .main-content {
+                padding: 2rem 0;
+            }
+
+            .pumps-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .pump-card {
+                padding: 2rem;
+                max-width: none;
+            }
+
+            .upload-area {
+                min-height: 200px;
+            }
+
+            .upload-icon {
+                font-size: 3rem;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 0.75rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .pump-card {
+                padding: 1.5rem;
+            }
+
+            .upload-area {
+                min-height: 180px;
+            }
+
+            .upload-icon {
+                font-size: 2.5rem;
+            }
+
+            .upload-text {
+                font-size: 1rem;
+            }
+
+            .upload-subtext {
+                font-size: 0.85rem;
+            }
+
+            .btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.9rem;
+            }
+
+            .status {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+
+            .notification {
+                right: 10px;
+                left: 10px;
+                transform: translateY(-100px);
+            }
+
+            .notification.show {
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="container">
+                <h1>Petrol Pump Queue Analyzer</h1>
+                <p class="subtitle">Compare two petrol stations and find the fastest option</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <!-- Upload Section -->
+                <section class="upload-section">
+                    <div class="pumps-grid">
+                        <!-- Pump 01 -->
+                        <div class="pump-card">
+                            <div class="pump-header">
+                                <h3>Petrol Pump 01</h3>
+                                <p class="pump-address">MG Road, Pune</p>
+                                <span class="status status--info" id="status-01">Ready to Upload</span>
+                            </div>
+                            
+                            <div class="upload-section-pump">
+                                <label for="file-01" class="upload-area" id="upload-01">
+                                    <div class="upload-content">
+                                        <div class="upload-icon">📸</div>
+                                        <p class="upload-text">Click to upload image</p>
+                                        <p class="upload-subtext">PNG, JPG up to 10MB</p>
+                                    </div>
+                                </label>
+                                <input type="file" id="file-01" accept="image/*" class="file-input">
+                                
+                                <div class="image-preview" id="preview-01" style="display: none;">
+                                    <img id="image-01" alt="Pump 01 Preview">
+                                    <button class="remove-btn" id="remove-01">✕</button>
+                                </div>
+                                
+                                <div class="pump-results" id="results-01" style="display: none;">
+                                    <h4>Analysis Results</h4>
+                                    <div class="results-grid">
+                                        <div class="metric">
+                                            <span class="metric-label">Vehicles</span>
+                                            <span class="metric-value" id="vehicles-01">0</span>
+                                        </div>
+                                        <div class="metric">
+                                            <span class="metric-label">Wait Time</span>
+                                            <span class="metric-value" id="wait-time-01">0 min</span>
+                                        </div>
+                                        <div class="metric">
+                                            <span class="metric-label">Efficiency</span>
+                                            <span class="metric-value" id="efficiency-01">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pump 02 -->
+                        <div class="pump-card">
+                            <div class="pump-header">
+                                <h3>Petrol Pump 02</h3>
+                                <p class="pump-address">FC Road, Pune</p>
+                                <span class="status status--info" id="status-02">Ready to Upload</span>
+                            </div>
+                            
+                            <div class="upload-section-pump">
+                                <label for="file-02" class="upload-area" id="upload-02">
+                                    <div class="upload-content">
+                                        <div class="upload-icon">📸</div>
+                                        <p class="upload-text">Click to upload image</p>
+                                        <p class="upload-subtext">PNG, JPG up to 10MB</p>
+                                    </div>
+                                </label>
+                                <input type="file" id="file-02" accept="image/*" class="file-input">
+                                
+                                <div class="image-preview" id="preview-02" style="display: none;">
+                                    <img id="image-02" alt="Pump 02 Preview">
+                                    <button class="remove-btn" id="remove-02">✕</button>
+                                </div>
+                                
+                                <div class="pump-results" id="results-02" style="display: none;">
+                                    <h4>Analysis Results</h4>
+                                    <div class="results-grid">
+                                        <div class="metric">
+                                            <span class="metric-label">Vehicles</span>
+                                            <span class="metric-value" id="vehicles-02">0</span>
+                                        </div>
+                                        <div class="metric">
+                                            <span class="metric-label">Wait Time</span>
+                                            <span class="metric-value" id="wait-time-02">0 min</span>
+                                        </div>
+                                        <div class="metric">
+                                            <span class="metric-label">Efficiency</span>
+                                            <span class="metric-value" id="efficiency-02">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analyze Button -->
+                    <div class="analyze-section">
+                        <button class="btn btn--primary btn--lg hidden" id="analyzeBtn">
+                            Analyze Both Pumps
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Comparison Section -->
+                <section class="comparison-section hidden" id="comparisonSection">
+                    <div class="section-header">
+                        <h2>Comparison Results</h2>
+                        <div class="winner-announcement" id="winnerAnnouncement"></div>
+                    </div>
+                    
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h4>Wait Time Comparison</h4>
+                            <div style="position: relative; height: 300px;">
+                                <canvas id="waitTimeChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h4>Vehicle Distribution</h4>
+                            <div style="position: relative; height: 300px;">
+                                <canvas id="vehicleChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="navigation-section">
+                        <div class="optimal-choice" id="optimalChoice"></div>
+                        <button class="btn btn--primary btn--lg" id="navigateBtn">
+                            Navigate to Optimal Pump
+                        </button>
+                        <button class="btn btn--secondary" id="newAnalysisBtn">
+                            Start New Analysis
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Loading Modal -->
+                <div class="modal hidden" id="loadingModal">
+                    <div class="modal-content">
+                        <div class="loading-spinner"></div>
+                        <h3>Analyzing Images...</h3>
+                        <p>Using AI to detect vehicles and calculate wait times</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Notification -->
+        <div class="notification hidden" id="notification">
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <!-- Link to external JavaScript file -->
+    <script src="{{ url_for('static', filename='js/fuel.js') }}"></script>
+</body>
+</html>

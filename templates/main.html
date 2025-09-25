@@ -45,7 +45,7 @@
         }
 
         .nav-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
@@ -70,12 +70,13 @@
         .nav-links {
             display: flex;
             list-style: none;
-            gap: 1.5rem;
+            gap: 1.2rem;
             margin: 0;
             padding: 0;
             flex-shrink: 1;
             flex-wrap: nowrap;
-            overflow: hidden;
+            overflow: visible;
+            justify-content: center;
         }
 
         .nav-links li {
@@ -87,10 +88,11 @@
             text-decoration: none;
             font-weight: 500;
             transition: color 0.3s ease;
-            padding: 0.5rem 0.75rem;
+            padding: 0.5rem 0.6rem;
             border-radius: 8px;
             white-space: nowrap;
             display: block;
+            font-size: 0.95rem;
         }
 
         .nav-links a:hover {
@@ -119,6 +121,68 @@
         .btn-outline:hover {
             background: var(--signal-yellow);
             color: var(--charcoal-black);
+        }
+
+        /* Mobile Menu */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--tech-gray);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu-btn:hover {
+            color: var(--signal-yellow);
+            background: var(--glass-bg);
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 80px;
+            left: 0;
+            right: 0;
+            background: rgba(28, 28, 28, 0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 999;
+        }
+
+        .mobile-menu.show {
+            display: block;
+        }
+
+        .mobile-nav-links {
+            list-style: none;
+            padding: 1rem 0;
+            margin: 0;
+        }
+
+        .mobile-nav-links li {
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .mobile-nav-links li:last-child {
+            border-bottom: none;
+        }
+
+        .mobile-nav-links a {
+            display: block;
+            padding: 1rem 2rem;
+            color: var(--tech-gray);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-nav-links a:hover {
+            color: var(--signal-yellow);
+            background: var(--glass-bg);
         }
 
         /* Hero Section */
@@ -502,25 +566,49 @@
         }
 
         /* Responsive Design */
-        @media (max-width: 1024px) {
+        @media (max-width: 1200px) {
+            .nav-container {
+                max-width: 1200px;
+                padding: 0 1.5rem;
+            }
+            
             .nav-links {
                 gap: 1rem;
             }
             
             .nav-links a {
-                padding: 0.5rem;
+                padding: 0.4rem 0.5rem;
                 font-size: 0.9rem;
             }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
+            .nav-links {
+                gap: 0.8rem;
+            }
+            
+            .nav-links a {
+                padding: 0.4rem 0.4rem;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 900px) {
             .nav-links {
                 display: none;
+            }
+
+            .mobile-menu-btn {
+                display: block;
             }
 
             .nav-container {
                 padding: 0 1rem;
                 justify-content: space-between;
+            }
+
+            .nav-auth {
+                gap: 0.5rem;
             }
 
             .logo {
@@ -603,15 +691,35 @@
                 <li><a href="/monitoring">Monitoring</a></li>
                 <li><a href="/events">Events</a></li>
                 <li><a href="/heatmap">Heatmap</a></li>
+                <li><a href="/signalguiding">Signal Guiding</a></li>
+                <li><a href="/petrolpump">Petrol Pump Comparison</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
             <div class="nav-auth">
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    ☰
+                </button>
                 <a href="/auth" class="btn-outline">
                     👤 Account
                 </a>
             </div>
         </div>
     </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <ul class="mobile-nav-links">
+            <li><a href="/home">🏠 Home</a></li>
+            <li><a href="/prediction">🔮 Predictions</a></li>
+            <li><a href="/route-risk-analysis">📊 Risk Analysis</a></li>
+            <li><a href="/monitoring">📡 Monitoring</a></li>
+            <li><a href="/events">🎪 Events</a></li>
+            <li><a href="/heatmap">🌡️ Heatmap</a></li>
+            <li><a href="/signalguiding">🚦 Signal Guiding</a></li>
+            <li><a href="/petrolpump">⛽ Petrol Pump Comparison</a></li>
+            <li><a href="#contact">📞 Contact</a></li>
+        </ul>
+    </div>
 
     <!-- Hero Section -->
     <section class="hero">
@@ -741,6 +849,14 @@
                     <h3>Live Traffic Heatmap</h3>
                     <p>Interactive real-time traffic density visualization across Pune with TomTom API integration and live monitoring.</p>
                 </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        ⛽
+                    </div>
+                    <h3>Petrol Pump Comparison</h3>
+                    <p>AI-powered queue analysis to compare wait times at different petrol pumps and find the fastest fueling option.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -781,6 +897,7 @@
                     <h4>Features</h4>
                     <a href="/prediction">Traffic Predictions</a>
                     <a href="/monitoring">Route Monitoring</a>
+                    <a href="/petrolpump">Petrol Pump Comparison</a>
                     <a href="#features">Analytics</a>
                     <a href="#about">About Us</a>
                 </div>
@@ -1160,6 +1277,40 @@
                 });
             } else {
                 console.error('Route form not found!');
+            }
+
+            // Mobile menu functionality
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileMenu = document.getElementById('mobileMenu');
+
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('show');
+                    
+                    // Toggle hamburger icon
+                    if (mobileMenu.classList.contains('show')) {
+                        mobileMenuBtn.textContent = '✕';
+                    } else {
+                        mobileMenuBtn.textContent = '☰';
+                    }
+                });
+
+                // Close mobile menu when clicking on a link
+                const mobileNavLinks = mobileMenu.querySelectorAll('a');
+                mobileNavLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        mobileMenu.classList.remove('show');
+                        mobileMenuBtn.textContent = '☰';
+                    });
+                });
+
+                // Close mobile menu when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!mobileMenu.contains(event.target) && !mobileMenuBtn.contains(event.target)) {
+                        mobileMenu.classList.remove('show');
+                        mobileMenuBtn.textContent = '☰';
+                    }
+                });
             }
         });
     </script>

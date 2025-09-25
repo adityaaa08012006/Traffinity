@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulator - Traffinity Smart Traffic Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* Additional simulator-specific styles */
+        .simulator-page {
+            min-height: 100vh;
+            padding-top: 80px;
+            background: var(--charcoal-black);
+        }
+        
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--signal-yellow), var(--green-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
+            color: var(--tech-gray);
+            opacity: 0.8;
+        }
+        
+        /* Upload grid styling */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .lane-upload {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .lane-upload:hover {
+            border-color: var(--signal-yellow);
+            transform: translateY(-2px);
+        }
+        
+        .lane-upload.uploading {
+            border-color: var(--signal-yellow);
+            background: rgba(255, 210, 63, 0.05);
+        }
+        
+        .lane-upload.analyzing {
+            border-color: var(--green-light);
+            background: rgba(33, 191, 115, 0.05);
+        }
+        
+        .lane-upload.completed {
+            border-color: var(--green-light);
+            background: rgba(33, 191, 115, 0.1);
+        }
+        
+        .lane-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .lane-header h3 {
+            color: var(--tech-gray);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .upload-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .upload-status.ready {
+            color: var(--tech-gray);
+        }
+        
+        .upload-status.uploading {
+            color: var(--signal-yellow);
+            border-color: var(--signal-yellow);
+            background: rgba(255, 210, 63, 0.1);
+        }
+        
+        .upload-status.analyzing {
+            color: var(--green-light);
+            border-color: var(--green-light);
+            background: rgba(33, 191, 115, 0.1);
+        }
+        
+        .upload-status.completed {
+            color: var(--green-light);
+            border-color: var(--green-light);
+            background: rgba(33, 191, 115, 0.1);
+        }
+        
+        /* Upload area styling */
+        .upload-area {
+            border: 2px dashed var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--signal-yellow);
+            background: rgba(255, 210, 63, 0.05);
+        }
+        
+        .upload-label {
+            cursor: pointer;
+        }
+        
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-hint {
+            font-size: 0.85rem;
+            color: var(--tech-gray);
+            opacity: 0.6;
+            margin-top: 0.5rem;
+        }
+        
+        .image-preview {
+            display: none;
+        }
+        
+        .image-preview.active {
+            display: block;
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Vehicle count results */
+        .analysis-result {
+            background: rgba(28, 28, 28, 0.5);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        
+        .vehicle-counts {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .count-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: var(--glass-bg);
+            border-radius: 6px;
+        }
+        
+        .count-icon {
+            font-size: 1.2rem;
+        }
+        
+        .count-label {
+            flex: 1;
+            font-size: 0.9rem;
+            color: var(--tech-gray);
+        }
+        
+        .count-value {
+            font-weight: 600;
+            color: var(--signal-yellow);
+            min-width: 30px;
+            text-align: right;
+        }
+        
+        /* Button animations */
+        .btn.pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Progress animations */
+        .progress-fill {
+            transition: width 0.5s ease;
+        }
+        
+        /* Hover effects for cards */
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 210, 63, 0.1);
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .simulator-container {
+                grid-template-columns: 1fr !important;
+                gap: 2rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .main-container {
+                padding: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .junction-grid {
+                max-width: 300px;
+            }
+            
+            .approach {
+                padding: 0.5rem;
+            }
+            
+            .light {
+                width: 10px;
+                height: 10px;
+            }
+        }
+    </style>
+</head>
+<body class="simulator-page">
+    <!-- Navigation Header -->
+    <nav class="nav-header">
+        <div class="nav-container">
+            <a href="/home" style="text-decoration: none;">
+                <h1>🚦 Traffinity</h1>
+            </a>
+            <div style="display: flex; gap: 2rem; align-items: center;">
+                <a href="/home" class="btn btn--outline btn--sm">← Back to Home</a>
+                <a href="/auth" class="btn btn--outline btn--sm">👤 Account</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Upload Section -->
+        <section class="upload-section" id="upload-section">
+            <h2 class="section-title">Lane Image Upload & Analysis</h2>
+            <p class="section-subtitle">Upload images from all 4 lanes to analyze traffic density and optimize signal timing</p>
+                
+                <div class="upload-grid">
+                    <!-- North Lane -->
+                    <div class="lane-upload" data-direction="north">
+                        <div class="lane-header">
+                            <h3>🔼 North Lane</h3>
+                            <div class="upload-status" id="status-north">Ready</div>
+                        </div>
+                        <div class="upload-area" id="upload-north">
+                            <input type="file" id="file-north" accept="image/*" class="file-input" style="display: none;">
+                            <div class="upload-label">
+                                <div class="upload-icon">📸</div>
+                                <div>Click to Upload Image</div>
+                                <div class="upload-hint">JPG, PNG up to 10MB</div>
+                            </div>
+                            <div class="image-preview" id="preview-north"></div>
+                        </div>
+                        <div class="analysis-result" id="result-north">
+                            <div class="vehicle-counts">
+                                <div class="count-item">
+                                    <span class="count-icon">🏍️</span>
+                                    <span class="count-label">Two-wheelers (a):</span>
+                                    <span class="count-value" id="count-north-a">--</span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-icon">🚗</span>
+                                    <span class="count-label">Four-wheelers (b):</span>
+                                    <span class="count-value" id="count-north-b">--</span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-icon">🚛</span>
+                                    <span class="count-label">Heavy vehicles (c):</span>
+                                    <span class="count-value" id="count-north-c">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- East Lane -->
+                    <div class="lane-upload" data-direction="east">
+                        <div class="lane-header">
+                            <h3>▶️ East Lane</h3>
+                            <div class="upload-status" id="status-east">Ready</div>
+                        </div>
+                        <div class="upload-area" id="upload-east">
+                            <input type="file" id="file-east" accept="image/*" class="file-input" style="display: none;">
+                            <div class="upload-label">
+                                <div class="upload-icon">📸</div>
+                                <div>Click to Upload Image</div>
+                                <div class="upload-hint">JPG, PNG up to 10MB</div>
+                            </div>
+                            <div class="image-preview" id="preview-east"></div>
+                        </div>
+                        <div class="analysis-result" id="result-east">
+                            <div class="vehicle-counts">
+                                <div class="count-item">
+                                    <span class="count-icon">🏍️</span>
+                                    <span class="count-label">Two-wheelers (a):</span>
+                                    <span class="count-value" id="count-east-a">--</span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-icon">🚗</span>
+                                    <span class="count-label">Four-wheelers (b):</span>
+                                    <span class="count-value" id="count-east-b">--</span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-icon">🚛</span>
+                                    <span class="count-label">Heavy vehicles (c):</span>
+                                    <span class="count-value" id="count-east-c">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- South Lane -->
+                    <div class="lane-upload" data-direction="south">
+                        <div class="lane-header">
+                            <h3>🔽 South Lane</h3>
+                            <div class="upload-status" id="status-south">Ready</div>
+                        </div>
+                        <div class="upload-area" id="upload-south">
+                            <input type="file" id="file-south" accept="image/*" class="file-input" style="display: none;">
+                            <div class="upload-label">
+                                <div class="upload-icon">📸</div>
+                                <div>Click to Upload Image</div>
+                                <div class="upload-hint">JPG, PNG up to 10MB</div>
+                            </div>
+                            <div class="image-preview" id="preview-south"></div>
+                        </div>
+                        <div class="analysis-result" id="result-south">
+                            <div class="vehicle-counts">
+                                <div class="count-item">
+                                    <span class="count-icon">🏍️</span>
+                                    <span class="count-label">Two-wheelers (a):</span>
+                                    <span class="count-value" id="count-south-a">--</span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-icon">🚗</span>
+                                    <span class="count-label">Four-wheelers (b):</span>
+                                    <span class="count-value" id="count-south-b">--</span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-icon">🚛</span>
+                                    <span class="count-label">Heavy vehicles (c):</span>
+                                    <span class="count-value" id="count-south-c">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- West Lane -->
+                    <div class="lane-upload" data-direction="west">
+                        <div class="lane-header">
+                            <h3>◀️ West Lane</h3>
+                            <div class="upload-status" id="status-west">Ready</div>
+                        </div>
+                        <div class="upload-area" id="upload-west">
+                            <input type="file" id="file-west" accept="image/*" class="file-input" style="display: none;">
+                            <div class="upload-label">
+                                <div class="upload-icon">📸</div>
+                                <div>Click to Upload Image</div>
+                                <div class="upload-hint">JPG, PNG up to 10MB</div>
+                            </div>
+                            <div class="image-preview" id="preview-west"></div>
+                        </div>
+                        <div class="analysis-result" id="result-west">
+                            <div class="vehicle-counts">
+                                <div class="count-item">
+                                    <span class="count-icon">🏍️</span>
+                                    <span class="count-label">Two-wheelers (a):</span>
+                                    <span class="count-value" id="count-west-a">--</span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-icon">🚗</span>
+                                    <span class="count-label">Four-wheelers (b):</span>
+                                    <span class="count-value" id="count-west-b">--</span>
+                                </div>
+                                <div class="count-item">
+                                    <span class="count-icon">🚛</span>
+                                    <span class="count-label">Heavy vehicles (c):</span>
+                                    <span class="count-value" id="count-west-c">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- Analysis Controls -->
+            <div class="analysis-controls" style="text-align: center; margin: 3rem 0;">
+                <div class="progress-indicator" id="progress-indicator" style="margin-bottom: 2rem;">
+                    <div class="progress-text" style="color: var(--tech-gray); margin-bottom: 1rem;">Upload images for all 4 lanes to start analysis</div>
+                    <div class="progress-bar" style="background: var(--glass-bg); height: 6px; border-radius: 3px; overflow: hidden;">
+                        <div class="progress-fill" id="progress-fill" style="height: 100%; background: var(--signal-yellow); width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn--primary btn--lg" id="start-analysis" disabled>Start Signal Optimization</button>
+                    <button class="btn btn--outline btn--lg" id="reset-analysis">Reset All</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Optimization Results Section -->
+        <section class="results-section" id="results-section" style="display: none; margin: 3rem 0;">
+            <h2 class="section-title">Signal Timing Optimization Results</h2>
+            
+            <div class="results-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                <!-- Summary Card -->
+                <div class="card summary-card">
+                    <h3 style="color: var(--signal-yellow); margin-bottom: 1.5rem;">Traffic Analysis Summary</h3>
+                    <div class="summary-stats" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="stat-item" style="display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(28, 28, 28, 0.5); border-radius: 8px;">
+                            <span class="stat-label" style="color: var(--tech-gray); opacity: 0.8;">Total Vehicles</span>
+                            <span class="stat-value" id="total-vehicles" style="font-weight: 600; color: var(--signal-yellow);">--</span>
+                        </div>
+                        <div class="stat-item" style="display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(28, 28, 28, 0.5); border-radius: 8px;">
+                            <span class="stat-label" style="color: var(--tech-gray); opacity: 0.8;">Congestion Level</span>
+                            <span class="stat-value" id="congestion-level" style="font-weight: 600; color: var(--signal-yellow);">--</span>
+                        </div>
+                        <div class="stat-item" style="display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(28, 28, 28, 0.5); border-radius: 8px;">
+                            <span class="stat-label" style="color: var(--tech-gray); opacity: 0.8;">Total Cycle Time</span>
+                            <span class="stat-value" id="cycle-time" style="font-weight: 600; color: var(--signal-yellow);">--</span>
+                        </div>
+                        <div class="stat-item" style="display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(28, 28, 28, 0.5); border-radius: 8px;">
+                            <span class="stat-label" style="color: var(--tech-gray); opacity: 0.8;">Efficiency Score</span>
+                            <span class="stat-value" id="efficiency-score" style="font-weight: 600; color: var(--signal-yellow);">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signal Timing Card -->
+                <div class="card timing-card">
+                    <h3 style="color: var(--signal-yellow); margin-bottom: 1.5rem;">Optimized Signal Timing</h3>
+                    <div class="timing-breakdown" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="timing-item" style="display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(28, 28, 28, 0.5); border-radius: 8px;">
+                            <span class="timing-direction" style="color: var(--tech-gray);">🔼 North</span>
+                            <span class="timing-value" id="timing-north" style="font-weight: 600; color: var(--green-light);">-- sec</span>
+                        </div>
+                        <div class="timing-item" style="display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(28, 28, 28, 0.5); border-radius: 8px;">
+                            <span class="timing-direction" style="color: var(--tech-gray);">▶️ East</span>
+                            <span class="timing-value" id="timing-east" style="font-weight: 600; color: var(--green-light);">-- sec</span>
+                        </div>
+                        <div class="timing-item" style="display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(28, 28, 28, 0.5); border-radius: 8px;">
+                            <span class="timing-direction" style="color: var(--tech-gray);">🔽 South</span>
+                            <span class="timing-value" id="timing-south" style="font-weight: 600; color: var(--green-light);">-- sec</span>
+                        </div>
+                        <div class="timing-item" style="display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(28, 28, 28, 0.5); border-radius: 8px;">
+                            <span class="timing-direction" style="color: var(--tech-gray);">◀️ West</span>
+                            <span class="timing-value" id="timing-west" style="font-weight: 600; color: var(--green-light);">-- sec</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Distribution Chart -->
+            <div class="card chart-card">
+                <h3 style="color: var(--signal-yellow); margin-bottom: 1.5rem;">Vehicle Distribution Analysis</h3>
+                <div class="chart-container" style="position: relative; height: 350px;">
+                    <canvas id="distribution-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Simulator Section -->
+        <section class="simulator-section" id="simulator-section" style="margin: 4rem 0;">
+            <h2 class="section-title">4-Lane Junction Simulator</h2>
+            <p class="section-subtitle">Real-time traffic light simulation based on optimized signal timing</p>
+            
+            <div class="simulator-container" style="display: grid; grid-template-columns: 2fr 1fr; gap: 3rem; align-items: start;"
+                 data-mobile-style="grid-template-columns: 1fr;">
+                <style>
+                    @media (max-width: 768px) {
+                        .simulator-container[data-mobile-style] {
+                            grid-template-columns: 1fr !important;
+                        }
+                    }
+                    
+                    /* Junction simulator styles */
+                    .junction-visual {
+                        background: var(--glass-bg);
+                        border: 1px solid var(--glass-border);
+                        border-radius: 20px;
+                        padding: 2rem;
+                        backdrop-filter: blur(20px);
+                    }
+                    
+                    .junction-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 2fr 1fr;
+                        grid-template-rows: 1fr 2fr 1fr;
+                        gap: 1rem;
+                        max-width: 400px;
+                        margin: 0 auto;
+                        aspect-ratio: 1;
+                    }
+                    
+                    .approach {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 1rem;
+                        background: rgba(28, 28, 28, 0.5);
+                        border-radius: 12px;
+                        transition: all 0.3s ease;
+                        position: relative;
+                    }
+                    
+                    .approach.active {
+                        background: rgba(33, 191, 115, 0.2);
+                        border: 2px solid var(--green-light);
+                    }
+                    
+                    .approach.north { grid-column: 2; grid-row: 1; }
+                    .approach.east { grid-column: 3; grid-row: 2; }
+                    .approach.south { grid-column: 2; grid-row: 3; }
+                    .approach.west { grid-column: 1; grid-row: 2; }
+                    
+                    .intersection-center {
+                        grid-column: 2;
+                        grid-row: 2;
+                        background: var(--glass-bg);
+                        border: 2px solid var(--signal-yellow);
+                        border-radius: 50%;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        position: relative;
+                    }
+                    
+                    .traffic-light {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+                        margin-bottom: 0.5rem;
+                    }
+                    
+                    .light {
+                        width: 12px;
+                        height: 12px;
+                        border-radius: 50%;
+                        opacity: 0.3;
+                        transition: all 0.3s ease;
+                    }
+                    
+                    .light.red { background: var(--traffic-red); }
+                    .light.yellow { background: var(--signal-yellow); }
+                    .light.green { background: var(--green-light); }
+                    
+                    .light.active {
+                        opacity: 1;
+                        box-shadow: 0 0 10px currentColor;
+                    }
+                    
+                    .approach-label {
+                        font-size: 0.7rem;
+                        font-weight: 600;
+                        color: var(--tech-gray);
+                        margin-bottom: 0.25rem;
+                    }
+                    
+                    .countdown-timer {
+                        font-size: 0.8rem;
+                        font-weight: bold;
+                        color: var(--signal-yellow);
+                        min-height: 1rem;
+                    }
+                    
+                    .center-status {
+                        text-align: center;
+                    }
+                    
+                    .status-text {
+                        font-size: 0.6rem;
+                        color: var(--tech-gray);
+                        margin-bottom: 0.25rem;
+                    }
+                    
+                    .status-indicator {
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 50%;
+                        background: var(--green-light);
+                        margin: 0 auto;
+                    }
+                    
+                    .pedestrian-crossing {
+                        position: absolute;
+                        bottom: 0.25rem;
+                        font-size: 0.8rem;
+                    }
+                    
+                    .crossing-light {
+                        transition: all 0.3s ease;
+                    }
+                    
+                    .crossing-light.active {
+                        transform: scale(1.2);
+                    }
+                </style>
+                    <!-- Junction Visual -->
+                    <div class="junction-visual">
+                        <div class="junction-grid">
+                            <!-- North Approach -->
+                            <div class="approach north">
+                                <div class="traffic-light" id="light-north">
+                                    <div class="light red active" id="red-north"></div>
+                                    <div class="light yellow" id="yellow-north"></div>
+                                    <div class="light green" id="green-north"></div>
+                                </div>
+                                <div class="approach-label">NORTH</div>
+                                <div class="countdown-timer" id="timer-north">--</div>
+                                <div class="vehicle-flow" id="flow-north">
+                                    <div class="flow-indicator"></div>
+                                </div>
+                            </div>
+
+                            <!-- East Approach -->
+                            <div class="approach east">
+                                <div class="traffic-light" id="light-east">
+                                    <div class="light red active" id="red-east"></div>
+                                    <div class="light yellow" id="yellow-east"></div>
+                                    <div class="light green" id="green-east"></div>
+                                </div>
+                                <div class="approach-label">EAST</div>
+                                <div class="countdown-timer" id="timer-east">--</div>
+                                <div class="vehicle-flow" id="flow-east">
+                                    <div class="flow-indicator"></div>
+                                </div>
+                            </div>
+
+                            <!-- Intersection Center -->
+                            <div class="intersection-center">
+                                <div class="center-status" id="center-status">
+                                    <div class="status-text">Junction Controller</div>
+                                    <div class="status-indicator active" id="status-indicator"></div>
+                                </div>
+                                <div class="pedestrian-crossing">
+                                    <div class="crossing-light" id="ped-light">🚶‍♂️</div>
+                                </div>
+                            </div>
+
+                            <!-- South Approach -->
+                            <div class="approach south">
+                                <div class="traffic-light" id="light-south">
+                                    <div class="light red active" id="red-south"></div>
+                                    <div class="light yellow" id="yellow-south"></div>
+                                    <div class="light green" id="green-south"></div>
+                                </div>
+                                <div class="approach-label">SOUTH</div>
+                                <div class="countdown-timer" id="timer-south">--</div>
+                                <div class="vehicle-flow" id="flow-south">
+                                    <div class="flow-indicator"></div>
+                                </div>
+                            </div>
+
+                            <!-- West Approach -->
+                            <div class="approach west">
+                                <div class="traffic-light" id="light-west">
+                                    <div class="light red active" id="red-west"></div>
+                                    <div class="light yellow" id="yellow-west"></div>
+                                    <div class="light green" id="green-west"></div>
+                                </div>
+                                <div class="approach-label">WEST</div>
+                                <div class="countdown-timer" id="timer-west">--</div>
+                                <div class="vehicle-flow" id="flow-west">
+                                    <div class="flow-indicator"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- Simulator Controls -->
+                <div class="simulator-controls" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 2rem; backdrop-filter: blur(20px);">
+                    <div class="control-panel" style="margin-bottom: 2rem;">
+                        <h3 style="color: var(--signal-yellow); margin-bottom: 1.5rem;">Simulation Controls</h3>
+                        <div class="control-buttons" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem;">
+                            <button class="btn btn--primary btn--full-width" id="start-simulation">▶️ Start Simulation</button>
+                            <button class="btn btn--outline btn--full-width" id="pause-simulation">⏸️ Pause</button>
+                            <button class="btn btn--outline btn--full-width" id="reset-simulation">🔄 Reset</button>
+                        </div>
+                        
+                        <div class="simulation-info" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div class="info-item" style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(28, 28, 28, 0.5); border-radius: 6px;">
+                                <span class="info-label" style="color: var(--tech-gray); opacity: 0.8;">Current Phase:</span>
+                                <span class="info-value" id="current-phase" style="font-weight: 500; color: var(--signal-yellow);">Initialization</span>
+                            </div>
+                            <div class="info-item" style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(28, 28, 28, 0.5); border-radius: 6px;">
+                                <span class="info-label" style="color: var(--tech-gray); opacity: 0.8;">Cycle Progress:</span>
+                                <span class="info-value" id="cycle-progress" style="font-weight: 500; color: var(--signal-yellow);">0%</span>
+                            </div>
+                            <div class="info-item" style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(28, 28, 28, 0.5); border-radius: 6px;">
+                                <span class="info-label" style="color: var(--tech-gray); opacity: 0.8;">Next Phase:</span>
+                                <span class="info-value" id="next-phase" style="font-weight: 500; color: var(--signal-yellow);">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="performance-metrics">
+                        <h3 style="color: var(--signal-yellow); margin-bottom: 1.5rem;">Performance Metrics</h3>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div class="metric-item" style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(28, 28, 28, 0.5); border-radius: 6px;">
+                                <span class="metric-label" style="color: var(--tech-gray); opacity: 0.8;">Congestion Reduction:</span>
+                                <span class="metric-value success" id="congestion-reduction" style="font-weight: 500; color: var(--green-light);">--</span>
+                            </div>
+                            <div class="metric-item" style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(28, 28, 28, 0.5); border-radius: 6px;">
+                                <span class="metric-label" style="color: var(--tech-gray); opacity: 0.8;">Average Wait Time:</span>
+                                <span class="metric-value" id="avg-wait-time" style="font-weight: 500; color: var(--signal-yellow);">--</span>
+                            </div>
+                            <div class="metric-item" style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(28, 28, 28, 0.5); border-radius: 6px;">
+                                <span class="metric-label" style="color: var(--tech-gray); opacity: 0.8;">Junction Efficiency:</span>
+                                <span class="metric-value success" id="junction-efficiency" style="font-weight: 500; color: var(--green-light);">--</span>
+                            </div>
+                            <div class="metric-item" style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(28, 28, 28, 0.5); border-radius: 6px;">
+                                <span class="metric-label" style="color: var(--tech-gray); opacity: 0.8;">CO₂ Emissions:</span>
+                                <span class="metric-value warning" id="co2-emissions" style="font-weight: 500; color: var(--traffic-red);">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Demo Mode Notice -->
+            <div class="demo-notice" style="background: rgba(255, 210, 63, 0.1); border: 1px solid var(--signal-yellow); border-radius: 12px; padding: 1.5rem; margin: 2rem 0; text-align: center;">
+                <p style="color: var(--signal-yellow); font-weight: 500;"><strong>Demo Mode:</strong> You can test the simulator without uploading images. Default timing values will be used for demonstration.</p>
+            </div>
+        </section>
+
+        <!-- Export Section -->
+        <section class="export-section" id="export-section" style="display: none; margin: 3rem 0;">
+            <div class="card">
+                <h3 style="color: var(--signal-yellow); margin-bottom: 1rem;">Export Optimization Report</h3>
+                <p style="color: var(--tech-gray); margin-bottom: 2rem; opacity: 0.8;">Generate a comprehensive report of the traffic analysis and signal optimization results.</p>
+                <div class="export-options" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn--primary" id="export-pdf">📄 Export PDF Report</button>
+                    <button class="btn btn--outline" id="export-json">📊 Export JSON Data</button>
+                    <button class="btn btn--outline" id="share-results">🔗 Share Results</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(28, 28, 28, 0.9); backdrop-filter: blur(10px); z-index: 10000; display: none; align-items: center; justify-content: center;">
+        <div class="loading-content" style="text-align: center; padding: 2rem;">
+            <div class="loading-spinner" style="width: 60px; height: 60px; border: 4px solid var(--glass-border); border-radius: 50%; border-top-color: var(--signal-yellow); animation: spin 1s linear infinite; margin: 0 auto 1.5rem;"></div>
+            <div class="loading-text" id="loading-text" style="color: var(--tech-gray); font-size: 1.1rem; margin-bottom: 1rem;">Analyzing images with AI...</div>
+            <div class="loading-progress" style="width: 200px; height: 4px; background: var(--glass-bg); border-radius: 2px; overflow: hidden; margin: 0 auto;">
+                <div class="loading-progress-bar" id="loading-progress-bar" style="height: 100%; background: var(--signal-yellow); width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+        <style>
+            .loading-overlay.active {
+                display: flex !important;
+            }
+            
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+            
+            /* Notification animations */
+            @keyframes slideInRight {
+                from {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+            
+            @keyframes slideOutRight {
+                from {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
+            }
+        </style>
+    </div>
+
+    <!-- Link to the simulator JavaScript file -->
+    <script src="{{ url_for('static', filename='js/simulator.js') }}"></script>
+</body>
+</html>

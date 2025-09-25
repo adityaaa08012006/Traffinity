@@ -1597,6 +1597,16 @@ def events():
     """Serve the events page"""
     return render_template('events.html')
 
+@app.route('/signalguiding')
+def signalguiding():
+    """Serve the AI traffic signal optimizer and simulator page"""
+    return render_template('simulator.html')
+
+@app.route('/petrolpump')
+def petrolpump():
+    """Serve the petrol pump queue analyzer page"""
+    return render_template('petrolpump.html')
+
 @app.route('/analyze_route', methods=['POST'])
 def analyze_route():
     """Handle route risk analysis form submission with enhanced risk assessment"""
